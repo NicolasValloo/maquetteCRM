@@ -1,0 +1,380 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>CRM SaaS — Tickets</title>
+  <link rel="stylesheet" href="design-system.css">
+  <style>
+    /* ============================================================
+       TICKETS — Page-specific styles (BEM strict)
+       ============================================================ */
+
+    /* Sidebar & topbar */
+    .sidebar__item-badge { margin-left: auto; min-width: 18px; height: 18px; padding: 0 5px; font-size: 10px; font-weight: 600; line-height: 18px; text-align: center; border-radius: 9999px; background: rgba(255, 255, 255, .12); color: var(--gray-300); }
+    .sidebar__toggle { width: 28px; height: 28px; display: flex; align-items: center; justify-content: center; border-radius: var(--radius-md); color: var(--gray-500); transition: all var(--duration-fast) var(--ease-in-out)); margin-left: auto; flex-shrink: 0; }
+    .sidebar__toggle:hover { background: rgba(255, 255, 255, .08); color: var(--gray-300); }
+    .sidebar--collapsed .sidebar__logo span, .sidebar--collapsed .sidebar__section-label, .sidebar--collapsed .sidebar__item span, .sidebar--collapsed .sidebar__item-badge, .sidebar--collapsed .sidebar__footer-info { display: none; }
+    .sidebar--collapsed .sidebar__header { padding: var(--sp-3) var(--sp-2); justify-content: center; }
+    .sidebar--collapsed .sidebar__item { justify-content: center; padding: var(--sp-2); }
+    .sidebar__footer-user { display: flex; align-items: center; gap: var(--sp-2-5); padding: var(--sp-1-5) var(--sp-2-5); border-radius: var(--radius-md); cursor: pointer; transition: background var(--duration-fast) var(--ease-in-out)); }
+    .sidebar__footer-user:hover { background: rgba(255, 255, 255, .06); }
+    .sidebar__footer-avatar { width: 26px; height: 26px; border-radius: var(--radius-full); background: var(--accent-600); display: flex; align-items: center; justify-content: center; font-size: 10px; font-weight: 600; color: #fff; flex-shrink: 0; }
+    .sidebar__footer-info { display: flex; flex-direction: column; min-width: 0; }
+    .sidebar__footer-name { font-size: var(--text-sm); font-weight: 500; color: var(--gray-200); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .sidebar__footer-role { font-size: var(--text-xs); color: var(--gray-500); }
+    .topbar__bell { position: relative; width: 30px; height: 30px; display: flex; align-items: center; justify-content: center; border-radius: var(--radius-md); color: var(--text-tertiary); transition: all var(--duration-fast) var(--ease-in-out)); }
+    .topbar__bell:hover { background: var(--bg-hover); color: var(--text-primary); }
+    .topbar__bell svg { width: 16px; height: 16px; }
+    .topbar__bell-dot { position: absolute; top: 5px; right: 5px; width: 7px; height: 7px; border-radius: 50%; background: var(--color-danger); border: 2px solid var(--bg-surface); }
+
+    /* KPI row */
+    .tickets__kpi-row { display: grid; grid-template-columns: repeat(5, 1fr); gap: var(--sp-3); margin-bottom: var(--sp-4); }
+    .tickets__kpi { background: var(--bg-surface); border: 1px solid var(--border-subtle); border-radius: var(--radius-lg); padding: var(--sp-3) var(--sp-4); cursor: pointer; transition: all var(--duration-fast) var(--ease-in-out)); }
+    .tickets__kpi:hover { border-color: var(--border-strong); }
+    .tickets__kpi--active { border-color: var(--accent-500); box-shadow: 0 0 0 3px rgba(59, 130, 246, .08); }
+    .tickets__kpi-value { font-size: var(--text-xl); font-weight: 700; font-variant-numeric: tabular-nums; }
+    .tickets__kpi-label { font-size: var(--text-xs); color: var(--text-muted); margin-top: var(--sp-1); text-transform: uppercase; letter-spacing: 0.04em; }
+
+    /* Filters */
+    .tickets__filters { display: flex; gap: var(--sp-2); margin-bottom: var(--sp-4); flex-wrap: wrap; align-items: center; }
+
+    /* Table */
+    .tickets__table-wrap { background: var(--bg-surface); border: 1px solid var(--border-subtle); border-radius: var(--radius-lg); overflow: hidden; }
+    .tickets__table { width: 100%; font-size: var(--text-sm); }
+    .tickets__table th { text-align: left; padding: var(--sp-2) var(--sp-3); font-size: 10px; font-weight: 500; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.04em; border-bottom: 1px solid var(--border-default); background: var(--bg-surface); user-select: none; cursor: pointer; white-space: nowrap; }
+    .tickets__table th:hover { color: var(--text-primary); }
+    .tickets__table td { padding: var(--sp-2) var(--sp-3); border-bottom: 1px solid var(--border-subtle); vertical-align: middle; }
+    .tickets__table tbody tr { cursor: pointer; transition: background var(--duration-fast) var(--ease-in-out)); }
+    .tickets__table tbody tr:hover { background: var(--bg-hover); }
+
+    /* Priority dot */
+    .tickets__prio-dot { width: 8px; height: 8px; border-radius: 50%; display: inline-block; margin-right: 6px; }
+    .tickets__prio-dot--critical { background: var(--color-danger); }
+    .tickets__prio-dot--high { background: var(--color-warning); }
+    .tickets__prio-dot--medium { background: var(--accent-500); }
+    .tickets__prio-dot--low { background: var(--gray-400); }
+
+    /* Slide-over */
+    .tickets__slide-overlay { position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0, 0, 0, .35); z-index: 200; opacity: 0; pointer-events: none; transition: opacity .25s ease; }
+    .tickets__slide-overlay--open { opacity: 1; pointer-events: auto; }
+    .tickets__slide-panel { position: fixed; top: 0; right: 0; bottom: 0; width: 560px; max-width: 90vw; background: var(--bg-surface); border-left: 1px solid var(--border-default); z-index: 201; transform: translateX(100%); transition: transform .3s cubic-bezier(.4, 0, .2, 1); display: flex; flex-direction: column; overflow: hidden; }
+    .tickets__slide-overlay--open .tickets__slide-panel { transform: translateX(0); }
+    .tickets__slide-header { display: flex; align-items: center; justify-content: space-between; padding: var(--sp-4) var(--sp-5); border-bottom: 1px solid var(--border-subtle); flex-shrink: 0; }
+    .tickets__slide-title { font-size: var(--text-md); font-weight: 600; letter-spacing: var(--tracking-tight); }
+    .tickets__slide-close { width: 28px; height: 28px; display: flex; align-items: center; justify-content: center; border-radius: var(--radius-md); color: var(--text-tertiary); border: none; background: none; cursor: pointer; transition: all var(--duration-fast) var(--ease-in-out)); }
+    .tickets__slide-close:hover { background: var(--bg-active); color: var(--text-primary); }
+    .tickets__slide-body { flex: 1; overflow-y: auto; padding: var(--sp-5); }
+
+    /* Ticket detail fields */
+    .tickets__detail-field { display: flex; flex-direction: column; gap: 2px; }
+    .tickets__detail-label { font-size: 10px; font-weight: 500; text-transform: uppercase; letter-spacing: 0.04em; color: var(--text-muted); }
+    .tickets__detail-value { font-size: var(--text-sm); color: var(--text-primary); font-weight: 500; }
+
+    /* Comments */
+    .tickets__comment { padding: var(--sp-3); border: 1px solid var(--border-subtle); border-radius: var(--radius-md); margin-bottom: var(--sp-2-5); }
+    .tickets__comment-author { font-size: var(--text-xs); font-weight: 600; color: var(--text-primary); }
+    .tickets__comment-time { font-size: var(--text-xs); color: var(--text-muted); margin-left: var(--sp-2); }
+    .tickets__comment-text { font-size: var(--text-sm); color: var(--text-secondary); margin-top: var(--sp-1); line-height: var(--leading-relaxed); }
+    .tickets__comment--internal { background: #fffbeb; border-color: #fde68a; }
+    .tickets__comment--internal .tickets__comment-author::after { content: 'interne'; margin-left: 6px; font-size: 9px; font-weight: 600; background: #fef3c7; color: #d97706; padding: 1px 5px; border-radius: 9999px; }
+
+    /* States */
+    .tickets__state { display: none; padding: var(--sp-8) var(--sp-4); text-align: center; }
+    .tickets__state--loading { display: flex; align-items: center; justify-content: center; gap: var(--sp-2); }
+    .tickets__state--loading::before { content: ''; width: 20px; height: 20px; border: 2px solid var(--border-default); border-top-color: var(--accent-600); border-radius: 50%; animation: spin 1s linear infinite; }
+    .tickets__state--error { display: flex; align-items: center; justify-content: center; color: var(--color-danger); }
+    .tickets__state--empty { display: flex; flex-direction: column; align-items: center; justify-content: center; color: var(--text-muted); }
+    .tickets__state--filled { display: block; }
+
+    @keyframes spin { to { transform: rotate(360deg); } }
+  </style>
+</head>
+<body>
+  <a href="#main-content" class="skip-link">Aller au contenu</a>
+  <div class="app" id="app">
+
+    <!-- ============================================================
+         SIDEBAR
+         ============================================================ -->
+    <aside class="sidebar" id="sidebar" role="navigation" aria-label="Navigation principale">
+      <div class="sidebar__header">
+        <div class="sidebar__logo">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width:20px;height:20px"><rect x="3" y="3" width="7" height="7" rx="2"/><rect x="14" y="3" width="7" height="7" rx="2"/><rect x="3" y="14" width="7" height="7" rx="2"/><circle cx="17.5" cy="17.5" r="3.5"/></svg>
+          <span>CRM SaaS</span>
+        </div>
+        <button class="sidebar__toggle" id="sidebarToggle" aria-label="Réduire la sidebar">
+          <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" style="width:16px;height:16px"><path d="M10 3L5 8l5 5"/></svg>
+        </button>
+      </div>
+
+      <nav class="sidebar__nav">
+        <div class="sidebar__section">
+          <div class="sidebar__section-label">Opérations</div>
+          <a href="tickets.html" class="sidebar__item sidebar__item--active" data-page="tickets">
+            <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M3 4h10v8H3z"/><path d="M3 7h10"/></svg>
+            <span>Tickets</span>
+            <span class="sidebar__item-badge">12</span>
+          </a>
+        </div>
+      </nav>
+
+      <div class="sidebar__footer">
+        <div class="sidebar__footer-user">
+          <div class="sidebar__footer-avatar">SL</div>
+          <div class="sidebar__footer-info">
+            <div class="sidebar__footer-name">Sophie Lemaire</div>
+            <div class="sidebar__footer-role">Administratrice</div>
+          </div>
+        </div>
+      </div>
+    </aside>
+
+    <!-- ============================================================
+         MAIN AREA
+         ============================================================ -->
+    <div class="main">
+
+      <!-- Topbar -->
+      <header class="topbar" role="banner">
+        <nav class="topbar__breadcrumb" id="breadcrumb" aria-label="Fil d'Ariane">
+          <span class="topbar__breadcrumb-current">Tickets</span>
+        </nav>
+        <button class="topbar__search" id="searchTrigger" aria-label="Recherche globale">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+          <span>Rechercher…</span>
+          <kbd>⌘K</kbd>
+        </button>
+        <button class="topbar__bell" id="bellBtn" aria-label="Notifications" hx-get="/api/notifications/" hx-trigger="click" hx-target="#notificationPanel">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 0 1-3.46 0"/></svg>
+          <span class="topbar__bell-dot"></span>
+        </button>
+        <div class="topbar__avatar">ML</div>
+      </header>
+
+      <!-- Content -->
+      <main class="content" id="main-content" role="main">
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:var(--sp-4)">
+          <h1 class="content__title">Tickets</h1>
+          <button class="btn btn-primary btn-xs">
+            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+            Nouveau ticket
+          </button>
+        </div>
+
+        <!-- ============================================================
+             KPI ROW
+             ============================================================ -->
+        <div class="tickets__kpi-row" id="ticketsKpis" hx-get="/api/tickets/?statut=Ouvert" hx-trigger="load">
+          <div class="tickets__state tickets__state--loading">
+            <span>Chargement…</span>
+          </div>
+        </div>
+
+        <!-- ============================================================
+             FILTERS
+             ============================================================ -->
+        <!-- ============================================================
+             FILTERS
+             ============================================================ -->
+        <div class="tickets__filters">
+          <input class="input input-sm" type="text" id="ticketSearch" placeholder="Rechercher un ticket…" style="width:220px" hx-get="/api/tickets/" hx-trigger="input changed delay:300ms" hx-target="#ticketsBody" aria-label="Rechercher un ticket">
+          <select class="select select-sm" id="filterStatus" hx-get="/api/tickets/" hx-trigger="change" hx-target="#ticketsBody" aria-label="Filtrer par statut">
+            <option value="">Statut</option>
+            <option>Ouvert</option><option>En cours</option><option>En attente</option><option>Résolu</option><option>Fermé</option>
+          </select>
+          <select class="select select-sm" id="filterPrio" hx-get="/api/tickets/" hx-trigger="change" hx-target="#ticketsBody" aria-label="Filtrer par priorité">
+            <option value="">Priorité</option>
+            <option>Critique</option><option>Haute</option><option>Moyenne</option><option>Basse</option>
+          </select>
+          <select class="select select-sm" id="filterCat" hx-get="/api/tickets/" hx-trigger="change" hx-target="#ticketsBody" aria-label="Filtrer par catégorie">
+            <option value="">Catégorie</option>
+            <option>Technique</option><option>Facturation</option><option>Fonctionnel</option><option>Accès</option>
+          </select>
+        </div>
+
+        <!-- ============================================================
+             TABLE
+             ============================================================ -->
+        <div class="tickets__table-wrap">
+          <table class="tickets__table" aria-label="Liste des tickets" hx-get="/api/tickets/?statut=Ouvert" hx-trigger="load">
+            <th scope="col"ead>
+              <tr>
+                <th scope="col" style="width:6%">#</th>
+                <th scope="col" style="width:24%">Sujet</th>
+                <th scope="col" style="width:14%">Client</th>
+                <th scope="col" style="width:10%">Statut</th>
+                <th scope="col" style="width:10%">Priorité</th>
+                <th scope="col" style="width:10%">Catégorie</th>
+                <th scope="col" style="width:10%">Assigné</th>
+                <th scope="col" style="width:10%">Créé le</th>
+                <th scope="col" style="width:6%">Activité</th>
+              </tr>
+            </thead>
+            <tbody id="ticketsBody">
+              <tr>
+                <td colspan="9">
+                  <div class="tickets__state tickets__state--loading">
+                    <span>Chargement des tickets…</span>
+                  </div>
+                </td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+
+        <!-- Empty state -->
+        <div class="tickets__state tickets__state--empty" id="ticketsEmpty" style="display:none">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" style="width:40px;height:40px;margin-bottom:var(--sp-2)"><path d="M3 4h10v8H3z"/><path d="M3 7h10"/></svg>
+          <p>Aucun ticket trouvé</p>
+        </div>
+
+        <!-- Error state -->
+        <div class="tickets__state tickets__state--error" id="ticketsError" style="display:none">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width:16px;height:16px;margin-right:6px"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+          <span>Erreur lors du chargement des tickets</span>
+        </div>
+
+        <!-- Example data -->
+        <script>
+          const exampleTickets = [
+            { id: 1100, subject: 'Problème export PDF', client: 'Atelier Durand', status: 'Ouvert', prio: 'Haute', cat: 'Technique', agent: 'Marie L.', created: '20 Feb 2026', comments: 3 },
+            { id: 1101, subject: 'Erreur de facturation janvier', client: 'BET Conseil', status: 'Ouvert', prio: 'Critique', cat: 'Facturation', agent: 'Thomas R.', created: '21 Feb 2026', comments: 2 },
+            { id: 1102, subject: 'Impossible de se connecter', client: 'Urban Studio', status: 'En cours', prio: 'Haute', cat: 'Accès', agent: 'Sophie M.', created: '19 Feb 2026', comments: 5 },
+          ];
+
+          document.addEventListener('DOMContentLoaded', () => {
+            const tbody = document.getElementById('ticketsBody');
+            tbody.innerHTML = exampleTickets.map(t => `
+              <tr onclick="openTicket(${t.id})">
+                <td style="font-family:var(--font-mono);color:var(--text-muted);font-size:var(--text-xs)">#${t.id}</td>
+                <td><strong style="font-weight:500">${t.subject}</strong></td>
+                <td style="color:var(--text-secondary)">${t.client}</td>
+                <td><span class="pill pill-${t.status === 'Ouvert' ? 'info' : t.status === 'En cours' ? 'warning' : 'default'}">${t.status}</span></td>
+                <td style="font-size:var(--text-xs)"><span class="tickets__prio-dot tickets__prio-dot--${t.prio === 'Critique' ? 'critical' : t.prio === 'Haute' ? 'high' : t.prio === 'Moyenne' ? 'medium' : 'low'}" aria-label="Priorité: ${t.prio}"></span>${t.prio}</td>
+                <td><span class="pill pill-outline">${t.cat}</span></td>
+                <td style="color:var(--text-secondary)">${t.agent}</td>
+                <td style="color:var(--text-muted)">${t.created}</td>
+                <td style="color:var(--text-muted);font-variant-numeric:tabular-nums">${t.comments}</td>
+              </tr>
+            `).join('');
+          });
+        </script>
+
+      </main>
+    </div>
+
+  </div>
+
+  <!-- ============================================================
+       SLIDE-OVER: TICKET DETAIL
+       ============================================================ -->
+  <div class="tickets__slide-overlay" id="ticketSlide" role="dialog" aria-modal="true" aria-label="Détail ticket">
+    <div class="tickets__slide-panel">
+      <div class="tickets__slide-header">
+        <span class="tickets__slide-title" id="slideTicketTitle">Ticket</span>
+        <button class="tickets__slide-close" onclick="closeTicket()" aria-label="Fermer">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+        </button>
+      </div>
+      <div class="tickets__slide-body" id="slideBody">
+        <!-- Populated by JS -->
+      </div>
+    </div>
+  </div>
+
+  <!-- ============================================================
+       JAVASCRIPT
+       ============================================================ -->
+  <script>
+    /* -----------------------------------------------------------
+       Open ticket detail
+       ----------------------------------------------------------- */
+    function openTicket(ticketId) {
+      const ticket = exampleTickets.find(t => t.id === ticketId);
+      if (!ticket) return;
+
+      document.getElementById('slideTicketTitle').textContent = `#${ticket.id} — ${ticket.subject}`;
+      document.getElementById('slideBody').innerHTML = `
+        <div style="display:flex;gap:var(--sp-2);margin-bottom:var(--sp-4)">
+          <span class="pill pill-${ticket.status === 'Ouvert' ? 'info' : ticket.status === 'En cours' ? 'warning' : 'default'}">${ticket.status}</span>
+          <span class="pill pill-outline">${ticket.cat}</span>
+        </div>
+
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:var(--sp-3);margin-bottom:var(--sp-5)">
+          <div class="tickets__detail-field">
+            <span class="tickets__detail-label">Client</span>
+            <span class="tickets__detail-value">${ticket.client}</span>
+          </div>
+          <div class="tickets__detail-field">
+            <span class="tickets__detail-label">Assigné</span>
+            <span class="tickets__detail-value">${ticket.agent}</span>
+          </div>
+          <div class="tickets__detail-field">
+            <span class="tickets__detail-label">Créé le</span>
+            <span class="tickets__detail-value">${ticket.created}</span>
+          </div>
+          <div class="tickets__detail-field">
+            <span class="tickets__detail-label">Statut</span>
+            <select class="select-inline" style="width:auto" id="ticket-status-select" aria-label="Changer le statut du ticket">
+              <option selected>${ticket.status}</option>
+              <option>En cours</option>
+              <option>Résolu</option>
+              <option>Fermé</option>
+            </select>
+          </div>
+        </div>
+
+        <div style="font-size:var(--text-sm);color:var(--text-secondary);margin-bottom:var(--sp-5);line-height:var(--leading-relaxed)">
+          Le client signale un problème récurrent qui nécessite une intervention. Détails fournis dans les commentaires ci-dessous.
+        </div>
+
+        <div style="font-size:var(--text-xs);font-weight:600;text-transform:uppercase;letter-spacing:0.04em;color:var(--text-muted);margin-bottom:var(--sp-3)">Commentaires (3)</div>
+        <div class="tickets__comment">
+          <span class="tickets__comment-author">Pierre Durand</span>
+          <span class="tickets__comment-time">24 Feb 2026</span>
+          <div class="tickets__comment-text">Bonjour, nous rencontrons ce problème depuis la mise à jour de la semaine dernière. Cela bloque notre flux de travail quotidien.</div>
+        </div>
+        <div class="tickets__comment tickets__comment--internal">
+          <span class="tickets__comment-author">Marie L.</span>
+          <span class="tickets__comment-time">24 Feb 2026</span>
+          <div class="tickets__comment-text">J'ai reproduit le bug en environnement de test. C'est lié à la migration du module de rendu.</div>
+        </div>
+
+        <textarea class="input" style="width:100%;height:60px;resize:vertical;padding:var(--sp-2);margin-top:var(--sp-3)" placeholder="Ajouter un commentaire…" id="ticket-comment-textarea" aria-label="Ajouter un commentaire"></textarea>
+        <div style="display:flex;gap:var(--sp-2);margin-top:var(--sp-2)">
+          <button class="btn btn-primary btn-xs">Répondre</button>
+          <button class="btn btn-secondary btn-xs">Note interne</button>
+        </div>
+      `;
+
+      document.getElementById('ticketSlide').classList.add('tickets__slide-overlay--open');
+      document.body.style.overflow = 'hidden';
+    }
+
+    function closeTicket() {
+      document.getElementById('ticketSlide').classList.remove('tickets__slide-overlay--open');
+      document.body.style.overflow = '';
+    }
+
+    /* -----------------------------------------------------------
+       Sidebar collapse
+       ----------------------------------------------------------- */
+    const sidebar = document.getElementById('sidebar');
+    const sidebarToggle = document.getElementById('sidebarToggle');
+    sidebarToggle.addEventListener('click', () => {
+      sidebar.classList.toggle('sidebar--collapsed');
+    });
+
+    /* -----------------------------------------------------------
+       Close on Escape
+       ----------------------------------------------------------- */
+    document.addEventListener('keydown', (e) => {
+      if (e.key === 'Escape' && document.getElementById('ticketSlide').classList.contains('tickets__slide-overlay--open')) {
+        closeTicket();
+      }
+    });
+  </script>
+
+</body>
+</html>

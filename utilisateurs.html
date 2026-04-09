@@ -1,0 +1,419 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>CRM SaaS — Utilisateurs</title>
+  <link rel="stylesheet" href="design-system.css">
+  <style>
+    /* ============================================================
+       UTILISATEURS — Page-specific styles (BEM strict)
+       ============================================================ */
+
+    /* Sidebar & topbar */
+    .sidebar__item-badge { margin-left: auto; min-width: 18px; height: 18px; padding: 0 5px; font-size: 10px; font-weight: 600; line-height: 18px; text-align: center; border-radius: 9999px; background: rgba(255, 255, 255, .12); color: var(--gray-300); }
+    .sidebar__toggle { width: 28px; height: 28px; display: flex; align-items: center; justify-content: center; border-radius: var(--radius-md); color: var(--gray-500); transition: all var(--duration-fast) var(--ease-in-out)); margin-left: auto; flex-shrink: 0; }
+    .sidebar__toggle:hover { background: rgba(255, 255, 255, .08); color: var(--gray-300); }
+    .sidebar--collapsed .sidebar__logo span, .sidebar--collapsed .sidebar__section-label, .sidebar--collapsed .sidebar__item span, .sidebar--collapsed .sidebar__item-badge, .sidebar--collapsed .sidebar__footer-info { display: none; }
+    .sidebar--collapsed .sidebar__header { padding: var(--sp-3) var(--sp-2); justify-content: center; }
+    .sidebar--collapsed .sidebar__item { justify-content: center; padding: var(--sp-2); }
+    .sidebar__footer-user { display: flex; align-items: center; gap: var(--sp-2-5); padding: var(--sp-1-5) var(--sp-2-5); border-radius: var(--radius-md); cursor: pointer; transition: background var(--duration-fast) var(--ease-in-out)); }
+    .sidebar__footer-user:hover { background: rgba(255, 255, 255, .06); }
+    .sidebar__footer-avatar { width: 26px; height: 26px; border-radius: var(--radius-full); background: var(--accent-600); display: flex; align-items: center; justify-content: center; font-size: 10px; font-weight: 600; color: #fff; flex-shrink: 0; }
+    .sidebar__footer-info { display: flex; flex-direction: column; min-width: 0; }
+    .sidebar__footer-name { font-size: var(--text-sm); font-weight: 500; color: var(--gray-200); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .sidebar__footer-role { font-size: var(--text-xs); color: var(--gray-500); }
+    .topbar__bell { position: relative; width: 30px; height: 30px; display: flex; align-items: center; justify-content: center; border-radius: var(--radius-md); color: var(--text-tertiary); transition: all var(--duration-fast) var(--ease-in-out)); }
+    .topbar__bell:hover { background: var(--bg-hover); color: var(--text-primary); }
+    .topbar__bell svg { width: 16px; height: 16px; }
+    .topbar__bell-dot { position: absolute; top: 5px; right: 5px; width: 7px; height: 7px; border-radius: 50%; background: var(--color-danger); border: 2px solid var(--bg-surface); }
+
+    /* KPI cards */
+    .users__kpi-row { display: grid; grid-template-columns: repeat(5, 1fr); gap: var(--sp-3); margin-bottom: var(--sp-4); }
+    .users__kpi { padding: var(--sp-3) var(--sp-4); background: var(--bg-surface); border: 1px solid var(--border-subtle); border-radius: var(--radius-lg); }
+    .users__kpi-value { font-size: var(--text-xl); font-weight: 700; font-variant-numeric: tabular-nums; }
+    .users__kpi-label { font-size: var(--text-xs); color: var(--text-muted); margin-top: 2px; text-transform: uppercase; letter-spacing: 0.04em; }
+
+    /* Toolbar */
+    .users__toolbar { display: flex; justify-content: space-between; align-items: center; margin-bottom: var(--sp-3); gap: var(--sp-2); }
+    .users__toolbar-left { display: flex; align-items: center; gap: var(--sp-2); flex: 1; min-width: 0; }
+    .users__toolbar-right { display: flex; align-items: center; gap: var(--sp-2); flex-shrink: 0; }
+    .users__search-wrap { position: relative; display: flex; align-items: center; flex: 1; min-width: 0; max-width: 220px; }
+    .users__search-wrap svg { position: absolute; left: 8px; color: var(--text-muted); pointer-events: none; }
+    .users__search { padding-left: 28px; }
+
+    /* Table */
+    .users__table-wrap { background: var(--bg-surface); border: 1px solid var(--border-subtle); border-radius: var(--radius-lg); overflow: hidden; }
+    .users__table { width: 100%; font-size: var(--text-sm); }
+    .users__table th { text-align: left; padding: var(--sp-2) var(--sp-3); font-size: 10px; font-weight: 500; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.04em; border-bottom: 1px solid var(--border-default); background: var(--bg-surface); cursor: pointer; user-select: none; }
+    .users__table th:hover { color: var(--text-primary); }
+    .users__table td { padding: var(--sp-2) var(--sp-3); border-bottom: 1px solid var(--border-subtle); vertical-align: middle; }
+    .users__table tbody tr { transition: background var(--duration-fast) var(--ease-in-out)); cursor: pointer; }
+    .users__table tbody tr:hover { background: var(--bg-hover); }
+
+    /* User cell */
+    .users__cell { display: flex; align-items: center; gap: var(--sp-2); }
+    .users__avatar { width: 28px; height: 28px; border-radius: var(--radius-full); display: flex; align-items: center; justify-content: center; font-size: 10px; font-weight: 600; flex-shrink: 0; }
+    .users__avatar--active { background: var(--accent-100); color: var(--accent-600); }
+    .users__avatar--inactive { background: var(--gray-100); color: var(--gray-400); }
+    .users__avatar--pending { background: var(--color-warning-subtle); color: var(--color-warning); }
+    .users__avatar--locked { background: var(--color-danger-subtle); color: var(--color-danger); }
+    .users__name { font-weight: 500; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .users__email { font-size: 10px; color: var(--text-muted); }
+
+    /* MFA indicator */
+    .users__mfa--on { display: inline-flex; align-items: center; gap: 3px; font-size: var(--text-xs); color: var(--color-success); font-weight: 500; }
+    .users__mfa--off { font-size: var(--text-xs); color: var(--text-muted); }
+
+    /* Row actions */
+    .users__actions { display: flex; gap: var(--sp-1); }
+    .users__action-btn { width: 26px; height: 26px; display: flex; align-items: center; justify-content: center; border-radius: var(--radius-md); color: var(--text-tertiary); border: none; background: none; cursor: pointer; transition: all var(--duration-fast) var(--ease-in-out)); }
+    .users__action-btn:hover { background: var(--bg-active); color: var(--text-primary); }
+    .users__action-btn--danger:hover { background: var(--color-danger-subtle); color: var(--color-danger); }
+
+    /* Slide-over */
+    .users__slide-overlay { position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0, 0, 0, .35); z-index: 200; opacity: 0; pointer-events: none; transition: opacity .25s ease; }
+    .users__slide-overlay--open { opacity: 1; pointer-events: auto; }
+    .users__slide-panel { position: fixed; top: 0; right: 0; bottom: 0; width: 560px; max-width: 90vw; background: var(--bg-surface); border-left: 1px solid var(--border-default); z-index: 201; transform: translateX(100%); transition: transform .3s cubic-bezier(.4, 0, .2, 1); display: flex; flex-direction: column; overflow: hidden; }
+    .users__slide-overlay--open .users__slide-panel { transform: translateX(0); }
+    .users__slide-header { display: flex; align-items: center; justify-content: space-between; padding: var(--sp-4) var(--sp-5); border-bottom: 1px solid var(--border-subtle); flex-shrink: 0; }
+    .users__slide-title { font-size: var(--text-md); font-weight: 600; letter-spacing: var(--tracking-tight); }
+    .users__slide-close { width: 28px; height: 28px; display: flex; align-items: center; justify-content: center; border-radius: var(--radius-md); color: var(--text-tertiary); border: none; background: none; cursor: pointer; transition: all var(--duration-fast) var(--ease-in-out)); }
+    .users__slide-close:hover { background: var(--bg-active); color: var(--text-primary); }
+    .users__slide-body { flex: 1; overflow-y: auto; padding: var(--sp-5); }
+    .users__slide-footer { display: flex; justify-content: flex-end; gap: var(--sp-2); padding: var(--sp-3) var(--sp-5); border-top: 1px solid var(--border-subtle); flex-shrink: 0; }
+
+    /* Detail sections */
+    .users__detail-section { margin-bottom: var(--sp-5); }
+    .users__detail-title { font-size: 11px; font-weight: 600; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.04em; margin-bottom: var(--sp-3); }
+    .users__detail-grid { display: grid; grid-template-columns: 1fr 1fr; gap: var(--sp-3); }
+    .users__detail-field { display: flex; flex-direction: column; gap: 2px; }
+    .users__detail-label { font-size: 10px; font-weight: 500; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.03em; }
+    .users__detail-value { font-size: var(--text-sm); color: var(--text-primary); font-weight: 400; }
+
+    /* States */
+    .users__state { display: none; padding: var(--sp-8) var(--sp-4); text-align: center; }
+    .users__state--loading { display: flex; align-items: center; justify-content: center; gap: var(--sp-2); }
+    .users__state--loading::before { content: ''; width: 20px; height: 20px; border: 2px solid var(--border-default); border-top-color: var(--accent-600); border-radius: 50%; animation: spin 1s linear infinite; }
+    .users__state--error { display: flex; align-items: center; justify-content: center; color: var(--color-danger); }
+    .users__state--empty { display: flex; flex-direction: column; align-items: center; justify-content: center; color: var(--text-muted); }
+    .users__state--filled { display: block; }
+
+    @keyframes spin { to { transform: rotate(360deg); } }
+  </style>
+</head>
+<body>
+  <a href="#main-content" class="skip-link">Aller au contenu</a>
+  <div class="app" id="app">
+
+    <!-- ============================================================
+         SIDEBAR
+         ============================================================ -->
+    <aside class="sidebar" id="sidebar" role="navigation" aria-label="Navigation principale">
+      <div class="sidebar__header">
+        <div class="sidebar__logo">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width:20px;height:20px"><rect x="3" y="3" width="7" height="7" rx="2"/><rect x="14" y="3" width="7" height="7" rx="2"/><rect x="3" y="14" width="7" height="7" rx="2"/><circle cx="17.5" cy="17.5" r="3.5"/></svg>
+          <span>CRM SaaS</span>
+        </div>
+        <button class="sidebar__toggle" id="sidebarToggle" aria-label="Réduire la sidebar">
+          <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" style="width:16px;height:16px"><path d="M10 3L5 8l5 5"/></svg>
+        </button>
+      </div>
+
+      <nav class="sidebar__nav">
+        <div class="sidebar__section">
+          <div class="sidebar__section-label">Administration</div>
+          <a href="admin.html" class="sidebar__item" data-page="admin">
+            <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M8 2a6 6 0 100 12A6 6 0 008 2z"/><path d="M8 5v3l2 2"/></svg>
+            <span>Administration</span>
+          </a>
+          <a href="utilisateurs.html" class="sidebar__item sidebar__item--active" data-page="utilisateurs">
+            <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M8 8a3 3 0 100-6 3 3 0 000 6zM2 14c0-2.21 2.69-4 6-4s6 1.79 6 4"/></svg>
+            <span>Utilisateurs</span>
+          </a>
+        </div>
+      </nav>
+
+      <div class="sidebar__footer">
+        <div class="sidebar__footer-user">
+          <div class="sidebar__footer-avatar">SL</div>
+          <div class="sidebar__footer-info">
+            <div class="sidebar__footer-name">Sophie Lemaire</div>
+            <div class="sidebar__footer-role">Administratrice</div>
+          </div>
+        </div>
+      </div>
+    </aside>
+
+    <!-- ============================================================
+         MAIN AREA
+         ============================================================ -->
+    <div class="main">
+
+      <!-- Topbar -->
+      <header class="topbar" role="banner">
+        <nav class="topbar__breadcrumb" id="breadcrumb" aria-label="Fil d'Ariane">
+          <span class="topbar__breadcrumb-current">Utilisateurs</span>
+        </nav>
+        <button class="topbar__search" id="searchTrigger" aria-label="Recherche globale">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+          <span>Rechercher…</span>
+          <kbd>⌘K</kbd>
+        </button>
+        <button class="topbar__bell" id="bellBtn" aria-label="Notifications" hx-get="/api/notifications/" hx-trigger="click" hx-target="#notificationPanel">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 0 1-3.46 0"/></svg>
+          <span class="topbar__bell-dot"></span>
+        </button>
+        <div class="topbar__avatar">ML</div>
+      </header>
+
+      <!-- Content -->
+      <main class="content" id="main-content" role="main">
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:var(--sp-4)">
+          <h1 class="content__title">Utilisateurs</h1>
+          <button class="btn btn-primary btn-xs" onclick="openInviteModal()" aria-label="Inviter un utilisateur">
+            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+            Inviter
+          </button>
+        </div>
+
+        <!-- ============================================================
+             KPI CARDS
+             ============================================================ -->
+        <div class="users__kpi-row" id="usersKpis" hx-get="/api/utilisateurs/kpi/" hx-trigger="load">
+          <div class="users__state users__state--loading">
+            <span>Chargement…</span>
+          </div>
+        </div>
+
+        <!-- ============================================================
+             TOOLBAR
+             ============================================================ -->
+        <div class="users__toolbar">
+          <div class="users__toolbar-left">
+            <div class="users__search-wrap">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+              <input class="input input-sm users__search" type="text" id="userSearch" placeholder="Nom, email, rôle…" aria-label="Recherche utilisateur" hx-get="/api/utilisateurs/" hx-trigger="input changed delay:300ms" hx-target="#usersBody">
+            </div>
+            <select class="select select-sm" id="userRoleFilter" aria-label="Filtrer par rôle" hx-get="/api/utilisateurs/" hx-trigger="change" hx-target="#usersBody">
+              <option value="">Tous les rôles</option>
+              <option>Admin</option><option>Dirigeant</option><option>Commercial</option><option>CSM</option><option>Support</option>
+            </select>
+            <select class="select select-sm" id="userStatusFilter" aria-label="Filtrer par statut" hx-get="/api/utilisateurs/" hx-trigger="change" hx-target="#usersBody">
+              <option value="">Tous les statuts</option>
+              <option value="Actif">Actif</option><option value="Inactif">Inactif</option><option value="En attente">En attente</option><option value="Verrouillé">Verrouillé</option>
+            </select>
+          </div>
+          <div class="users__toolbar-right">
+            <button class="btn btn-secondary btn-xs" aria-label="Exporter CSV">
+              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+              Export
+            </button>
+          </div>
+        </div>
+
+        <!-- ============================================================
+             TABLE
+             ============================================================ -->
+        <div class="users__table-wrap">
+          <table class="users__table" aria-label="Liste des utilisateurs" hx-get="/api/utilisateurs/" hx-trigger="load">
+            <th scope="col"ead>
+              <tr>
+                <th scope="col" style="width:25%">Utilisateur</th>
+                <th scope="col" style="width:12%">Rôle</th>
+                <th scope="col" style="width:12%">Statut</th>
+                <th scope="col" style="width:7%">MFA</th>
+                <th scope="col" style="width:18%">Dernière connexion</th>
+                <th scope="col" style="width:14%">Créé le</th>
+                <th scope="col" style="width:12%">Actions</th>
+              </tr>
+            </thead>
+            <tbody id="usersBody">
+              <tr>
+                <td colspan="7">
+                  <div class="users__state users__state--loading">
+                    <span>Chargement des utilisateurs…</span>
+                  </div>
+                </td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+
+        <!-- Empty state -->
+        <div class="users__state users__state--empty" id="usersEmpty" style="display:none">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" style="width:40px;height:40px;margin-bottom:var(--sp-2)"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+          <p>Aucun utilisateur trouvé</p>
+        </div>
+
+        <!-- Example data -->
+        <script>
+          const exampleUsers = [
+            { id: 1, name: 'Pierre Durand', role: 'Commercial', email: 'p.durand@archimede.fr', status: 'Actif', mfa: true, last: '24 Feb 2026 14:32', created: '15 Jan 2025' },
+            { id: 2, name: 'Marie Lefèvre', role: 'Admin', email: 'ml.lefebvre@archimede.fr', status: 'Actif', mfa: true, last: '24 Feb 2026 16:10', created: '10 Jan 2025' },
+            { id: 3, name: 'Sophie Martin', role: 'CSM', email: 's.martin@archimede.fr', status: 'Actif', mfa: false, last: '23 Feb 2026 09:15', created: '20 Jan 2025' },
+          ];
+
+          document.addEventListener('DOMContentLoaded', () => {
+            const tbody = document.getElementById('usersBody');
+            tbody.innerHTML = exampleUsers.map(u => `
+              <tr onclick="openUserDetail(${u.id})">
+                <td><div class="users__cell"><div class="users__avatar users__avatar--active">${u.name.charAt(0)}${u.name.split(' ')[1].charAt(0)}</div><div><div class="users__name">${u.name}</div><div class="users__email">${u.email}</div></div></div></td>
+                <td>${u.role}</td>
+                <td><span class="pill pill-${u.status === 'Actif' ? 'success' : u.status === 'En attente' ? 'warning' : 'default'}">${u.status}</span></td>
+                <td>${u.mfa ? '<span class="users__mfa--on">✓ Oui</span>' : '<span class="users__mfa--off">—</span>'}</td>
+                <td style="font-size:var(--text-xs);color:var(--text-muted)">${u.last}</td>
+                <td style="font-size:var(--text-xs);color:var(--text-muted)">${u.created}</td>
+                <td><div class="users__actions"><button class="users__action-btn" aria-label="Voir détails" title="Voir"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg></button></div></td>
+              </tr>
+            `).join('');
+          });
+        </script>
+
+      </main>
+    </div>
+
+  </div>
+
+  <!-- ============================================================
+       SLIDE-OVER: USER DETAIL
+       ============================================================ -->
+  <div class="users__slide-overlay" id="userSlide" role="dialog" aria-modal="true" aria-label="Détail utilisateur">
+    <div class="users__slide-panel">
+      <div class="users__slide-header">
+        <span class="users__slide-title" id="slideUserName">Utilisateur</span>
+        <button class="users__slide-close" onclick="closeUserDetail()" aria-label="Fermer">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+        </button>
+      </div>
+      <div class="users__slide-body" id="slideBody">
+        <!-- Populated by JS -->
+      </div>
+      <div class="users__slide-footer">
+        <button class="btn btn-secondary btn-xs">Désactiver</button>
+        <button class="btn btn-primary btn-xs" onclick="closeUserDetail()">Fermer</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ============================================================
+       MODAL : INVITE USER
+       ============================================================ -->
+  <div class="modal-overlay" id="inviteModal" role="dialog" aria-modal="true" aria-label="Inviter un utilisateur">
+    <div class="modal">
+      <div class="modal-header">
+        <span class="modal-title">Inviter un utilisateur</span>
+        <button class="btn-close" onclick="closeInviteModal()" aria-label="Fermer">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+        </button>
+      </div>
+      <div class="modal-body">
+        <div class="form-row">
+          <label class="form-label" for="inviteEmail">Adresse email *</label>
+          <input class="input" type="email" id="inviteEmail" placeholder="prenom.nom@entreprise.fr" required>
+        </div>
+        <div class="form-row">
+          <label class="form-label" for="inviteRole">Rôle *</label>
+          <select class="select" id="inviteRole" required>
+            <option value="">Sélectionner un rôle</option>
+            <option>Admin</option><option>Dirigeant</option><option selected>Commercial</option><option>CSM</option><option>Support</option>
+          </select>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button class="btn btn-secondary btn-xs" onclick="closeInviteModal()">Annuler</button>
+        <button class="btn btn-primary btn-xs" hx-post="/api/utilisateurs/invite/" hx-include="#inviteEmail, #inviteRole" onclick="sendInvite()">
+          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg>
+          Envoyer l'invitation
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ============================================================
+       JAVASCRIPT
+       ============================================================ -->
+  <script>
+    /* -----------------------------------------------------------
+       User detail slide-over
+       ----------------------------------------------------------- */
+    function openUserDetail(userId) {
+      const overlay = document.getElementById('userSlide');
+      const user = exampleUsers.find(u => u.id === userId);
+      if (!user) return;
+
+      document.getElementById('slideUserName').textContent = user.name;
+      document.getElementById('slideBody').innerHTML = `
+        <div class="users__detail-section">
+          <div class="users__detail-title">Informations</div>
+          <div class="users__detail-grid">
+            <div class="users__detail-field">
+              <span class="users__detail-label">Nom</span>
+              <span class="users__detail-value">${user.name}</span>
+            </div>
+            <div class="users__detail-field">
+              <span class="users__detail-label">Email</span>
+              <span class="users__detail-value">${user.email}</span>
+            </div>
+            <div class="users__detail-field">
+              <span class="users__detail-label">Rôle</span>
+              <span class="users__detail-value">${user.role}</span>
+            </div>
+            <div class="users__detail-field">
+              <span class="users__detail-label">Statut</span>
+              <span class="users__detail-value">${user.status}</span>
+            </div>
+            <div class="users__detail-field">
+              <span class="users__detail-label">MFA</span>
+              <span class="users__detail-value">${user.mfa ? 'Activé' : 'Désactivé'}</span>
+            </div>
+            <div class="users__detail-field">
+              <span class="users__detail-label">Créé le</span>
+              <span class="users__detail-value">${user.created}</span>
+            </div>
+          </div>
+        </div>
+      `;
+
+      overlay.classList.add('users__slide-overlay--open');
+      document.body.style.overflow = 'hidden';
+    }
+
+    function closeUserDetail() {
+      document.getElementById('userSlide').classList.remove('users__slide-overlay--open');
+      document.body.style.overflow = '';
+    }
+
+    /* -----------------------------------------------------------
+       Invite modal
+       ----------------------------------------------------------- */
+    function openInviteModal() {
+      document.getElementById('inviteModal').classList.add('modal-overlay--open');
+      document.body.style.overflow = 'hidden';
+    }
+
+    function closeInviteModal() {
+      document.getElementById('inviteModal').classList.remove('modal-overlay--open');
+      document.body.style.overflow = '';
+    }
+
+    function sendInvite() {
+      const email = document.getElementById('inviteEmail').value;
+      const role = document.getElementById('inviteRole').value;
+      if (!email || !role) return;
+      // htmx will handle the POST to /api/utilisateurs/invite/
+      closeInviteModal();
+    }
+
+    /* -----------------------------------------------------------
+       Sidebar collapse
+       ----------------------------------------------------------- */
+    const sidebar = document.getElementById('sidebar');
+    const sidebarToggle = document.getElementById('sidebarToggle');
+    sidebarToggle.addEventListener('click', () => {
+      sidebar.classList.toggle('sidebar--collapsed');
+    });
+  </script>
+
+</body>
+</html>

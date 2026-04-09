@@ -1,0 +1,580 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>CRM SaaS — Administration</title>
+  <link rel="stylesheet" href="design-system.css">
+  <style>
+    /* ============================================================
+       ADMIN — Page-specific styles (BEM strict)
+       ============================================================ */
+
+    /* Sidebar & topbar overrides */
+    .sidebar__item-badge { margin-left: auto; min-width: 18px; height: 18px; padding: 0 5px; font-size: 10px; font-weight: 600; line-height: 18px; text-align: center; border-radius: 9999px; background: rgba(255, 255, 255, .12); color: var(--gray-300); }
+    .sidebar__toggle { width: 28px; height: 28px; display: flex; align-items: center; justify-content: center; border-radius: var(--radius-md); color: var(--gray-500); transition: all var(--duration-fast) var(--ease-in-out); margin-left: auto; flex-shrink: 0; }
+    .sidebar__toggle:hover { background: rgba(255, 255, 255, .08); color: var(--gray-300); }
+    .sidebar--collapsed .sidebar__logo span,
+    .sidebar--collapsed .sidebar__section-label,
+    .sidebar--collapsed .sidebar__item span,
+    .sidebar--collapsed .sidebar__item-badge,
+    .sidebar--collapsed .sidebar__footer-info { display: none; }
+    .sidebar--collapsed .sidebar__header { padding: var(--sp-3) var(--sp-2); justify-content: center; }
+    .sidebar--collapsed .sidebar__item { justify-content: center; padding: var(--sp-2); }
+    .sidebar--collapsed .sidebar__footer { padding: var(--sp-3) var(--sp-2); }
+    .sidebar--collapsed .sidebar__footer-user { justify-content: center; }
+    .sidebar__footer-user { display: flex; align-items: center; gap: var(--sp-2-5); padding: var(--sp-1-5) var(--sp-2-5); border-radius: var(--radius-md); cursor: pointer; transition: background var(--duration-fast) var(--ease-in-out); }
+    .sidebar__footer-user:hover { background: rgba(255, 255, 255, .06); }
+    .sidebar__footer-avatar { width: 26px; height: 26px; border-radius: var(--radius-full); background: var(--accent-600); display: flex; align-items: center; justify-content: center; font-size: 10px; font-weight: 600; color: #fff; flex-shrink: 0; }
+    .sidebar__footer-info { display: flex; flex-direction: column; min-width: 0; }
+    .sidebar__footer-name { font-size: var(--text-sm); font-weight: 500; color: var(--gray-200); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .sidebar__footer-role { font-size: var(--text-xs); color: var(--gray-500); }
+    .topbar__bell { position: relative; width: 30px; height: 30px; display: flex; align-items: center; justify-content: center; border-radius: var(--radius-md); color: var(--text-tertiary); transition: all var(--duration-fast) var(--ease-in-out)); }
+    .topbar__bell:hover { background: var(--bg-hover); color: var(--text-primary); }
+    .topbar__bell svg { width: 16px; height: 16px; }
+    .topbar__bell-dot { position: absolute; top: 5px; right: 5px; width: 7px; height: 7px; border-radius: 50%; background: var(--color-danger); border: 2px solid var(--bg-surface); }
+
+    /* Admin tabs */
+    .admin__tabs { display: flex; gap: 0; border-bottom: 1px solid var(--border-default); margin-bottom: var(--sp-5); }
+    .admin__tab { padding: var(--sp-2) var(--sp-4); font-size: var(--text-sm); font-weight: 500; color: var(--text-tertiary); border-bottom: 2px solid transparent; margin-bottom: -1px; cursor: pointer; transition: all var(--duration-fast) var(--ease-in-out); white-space: nowrap; }
+    .admin__tab:hover { color: var(--text-primary); }
+    .admin__tab--active { color: var(--text-primary); border-bottom-color: var(--accent-500); }
+    .admin__panel { display: none; }
+    .admin__panel--active { display: block; }
+
+    /* Form sections */
+    .admin-section { margin-bottom: var(--sp-6); }
+    .admin-section__title { font-size: var(--text-sm); font-weight: 600; margin-bottom: var(--sp-1); letter-spacing: var(--tracking-tight); }
+    .admin-section__desc { font-size: var(--text-xs); color: var(--text-muted); margin-bottom: var(--sp-4); }
+    .admin-form__grid { display: grid; grid-template-columns: 1fr 1fr; gap: var(--sp-3) var(--sp-4); }
+    .admin-form__row { display: flex; flex-direction: column; gap: 4px; }
+    .admin-form__label { font-size: 11px; font-weight: 500; color: var(--text-secondary); text-transform: uppercase; letter-spacing: 0.03em; }
+    .admin__divider { border: none; border-top: 1px solid var(--border-subtle); margin: var(--sp-5) 0; }
+
+    /* Loading, error, empty, filled states */
+    .admin__state { display: none; padding: var(--sp-8) var(--sp-4); text-align: center; }
+    .admin__state--loading { display: flex; align-items: center; justify-content: center; gap: var(--sp-2); }
+    .admin__state--loading::before { content: ''; width: 20px; height: 20px; border: 2px solid var(--border-default); border-top-color: var(--accent-600); border-radius: 50%; animation: spin 1s linear infinite; }
+    .admin__state--error { display: flex; align-items: center; justify-content: center; color: var(--color-danger); }
+    .admin__state--empty { display: flex; flex-direction: column; align-items: center; justify-content: center; color: var(--text-muted); }
+    .admin__state--filled { display: block; }
+
+    @keyframes spin { to { transform: rotate(360deg); } }
+
+    /* KPI cards */
+    .admin-kpi__row { display: grid; grid-template-columns: repeat(5, 1fr); gap: var(--sp-3); margin-bottom: var(--sp-4); }
+    .admin-kpi { padding: var(--sp-3) var(--sp-4); background: var(--bg-surface); border: 1px solid var(--border-subtle); border-radius: var(--radius-lg); }
+    .admin-kpi__value { font-size: var(--text-xl); font-weight: 700; font-variant-numeric: tabular-nums; }
+    .admin-kpi__label { font-size: var(--text-xs); color: var(--text-muted); margin-top: 2px; }
+
+    /* Roles matrix */
+    .roles__matrix-wrap { background: var(--bg-surface); border: 1px solid var(--border-subtle); border-radius: var(--radius-lg); overflow-x: auto; }
+    .roles__matrix { width: 100%; border-collapse: collapse; font-size: var(--text-xs); min-width: 900px; }
+    .roles__matrix th { padding: var(--sp-2) var(--sp-2); font-size: 10px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.04em; border-bottom: 1px solid var(--border-default); background: var(--bg-surface); position: sticky; top: 0; white-space: nowrap; }
+    .roles__matrix th:first-child { text-align: left; position: sticky; left: 0; z-index: 2; background: var(--bg-surface); min-width: 180px; }
+    .roles__matrix td { padding: var(--sp-1-5) var(--sp-2); border-bottom: 1px solid var(--border-subtle); text-align: center; vertical-align: middle; white-space: nowrap; }
+    .roles__matrix td:first-child { text-align: left; font-weight: 500; color: var(--text-primary); position: sticky; left: 0; background: var(--bg-surface); z-index: 1; }
+    .roles__matrix tbody tr:hover { background: var(--bg-hover); }
+    .roles__perm--full { color: var(--color-success); font-weight: 600; }
+    .roles__perm--write { color: var(--accent-600); }
+    .roles__perm--read { color: var(--text-secondary); }
+    .roles__perm--none { color: var(--gray-300); }
+
+    /* Connectors grid */
+    .connectors__grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: var(--sp-4); }
+    .connector__card { display: flex; align-items: center; gap: var(--sp-4); padding: var(--sp-4); background: var(--bg-surface); border: 1px solid var(--border-subtle); border-radius: var(--radius-lg); transition: all var(--duration-fast) var(--ease-in-out)); }
+    .connector__card:hover { border-color: var(--border-strong); }
+    .connector__icon { width: 44px; height: 44px; border-radius: var(--radius-lg); display: flex; align-items: center; justify-content: center; font-size: 20px; flex-shrink: 0; }
+    .connector__info { flex: 1; min-width: 0; }
+    .connector__name { font-size: var(--text-sm); font-weight: 600; }
+    .connector__desc { font-size: var(--text-xs); color: var(--text-muted); margin-top: 2px; }
+    .connector__status { display: flex; align-items: center; gap: var(--sp-2); }
+    .connector__dot { width: 8px; height: 8px; border-radius: 50%; }
+    .connector__dot--active { background: var(--color-success); }
+    .connector__dot--inactive { background: var(--gray-400); }
+    .connector__dot--error { background: var(--color-danger); }
+
+    /* Toggle switch */
+    .toggle { position: relative; width: 36px; height: 20px; border-radius: 10px; background: var(--gray-300); cursor: pointer; transition: background var(--duration-fast) var(--ease-in-out)); flex-shrink: 0; }
+    .toggle--on { background: var(--color-success); }
+    .toggle::after { content: ''; position: absolute; top: 2px; left: 2px; width: 16px; height: 16px; border-radius: 50%; background: #fff; box-shadow: var(--shadow-xs); transition: transform var(--duration-fast) var(--ease-out); }
+    .toggle--on::after { transform: translateX(16px); }
+  </style>
+</head>
+<body>
+  <a href="#main-content" class="skip-link">Aller au contenu</a>
+  <div class="app" id="app">
+
+    <!-- ============================================================
+         SIDEBAR
+         ============================================================ -->
+    <aside class="sidebar" id="sidebar" role="navigation" aria-label="Navigation principale">
+      <div class="sidebar__header">
+        <div class="sidebar__logo">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width:20px;height:20px"><rect x="3" y="3" width="7" height="7" rx="2"/><rect x="14" y="3" width="7" height="7" rx="2"/><rect x="3" y="14" width="7" height="7" rx="2"/><circle cx="17.5" cy="17.5" r="3.5"/></svg>
+          <span>CRM SaaS</span>
+        </div>
+        <button class="sidebar__toggle" id="sidebarToggle" aria-label="Réduire la sidebar">
+          <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" style="width:16px;height:16px"><path d="M10 3L5 8l5 5"/></svg>
+        </button>
+      </div>
+
+      <nav class="sidebar__nav">
+        <!-- Principal -->
+        <div class="sidebar__section">
+          <div class="sidebar__section-label">Principal</div>
+          <a href="dashboard.html" class="sidebar__item" data-page="dashboard">
+            <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="2" y="2" width="5" height="5" rx="1"/><rect x="9" y="2" width="5" height="5" rx="1"/><rect x="2" y="9" width="5" height="5" rx="1"/><rect x="9" y="9" width="5" height="5" rx="1"/></svg>
+            <span>Tableau de bord</span>
+          </a>
+          <a href="crm.html" class="sidebar__item" data-page="crm">
+            <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M8 8a3 3 0 100-6 3 3 0 000 6zM2 14c0-2.21 2.69-4 6-4s6 1.79 6 4"/></svg>
+            <span>CRM</span>
+          </a>
+        </div>
+
+        <!-- Opérations -->
+        <div class="sidebar__section">
+          <div class="sidebar__section-label">Opérations</div>
+          <a href="tickets.html" class="sidebar__item" data-page="tickets">
+            <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M3 4h10v8H3z"/><path d="M3 7h10"/></svg>
+            <span>Tickets</span>
+            <span class="sidebar__item-badge">12</span>
+          </a>
+        </div>
+
+        <!-- Administration -->
+        <div class="sidebar__section">
+          <div class="sidebar__section-label">Administration</div>
+          <a href="workflows.html" class="sidebar__item" data-page="workflows">
+            <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M2 4h4v3H2zM10 4h4v3h-4zM6 5h4M2 10h4v3H2zM10 10h4v3h-4zM6 11h4"/></svg>
+            <span>Workflows</span>
+          </a>
+          <a href="admin.html" class="sidebar__item sidebar__item--active" data-page="admin">
+            <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M8 2a6 6 0 100 12A6 6 0 008 2z"/><path d="M8 5v3l2 2"/></svg>
+            <span>Administration</span>
+          </a>
+        </div>
+      </nav>
+
+      <div class="sidebar__footer">
+        <div class="sidebar__footer-user">
+          <div class="sidebar__footer-avatar">SL</div>
+          <div class="sidebar__footer-info">
+            <div class="sidebar__footer-name">Sophie Lemaire</div>
+            <div class="sidebar__footer-role">Administratrice</div>
+          </div>
+        </div>
+      </div>
+    </aside>
+
+    <!-- ============================================================
+         MAIN AREA
+         ============================================================ -->
+    <div class="main">
+
+      <!-- Topbar -->
+      <header class="topbar" role="banner">
+        <nav class="topbar__breadcrumb" id="breadcrumb" aria-label="Fil d'Ariane">
+          <span class="topbar__breadcrumb-current">Administration</span>
+        </nav>
+        <button class="topbar__search" id="searchTrigger" aria-label="Recherche globale">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+          <span>Rechercher…</span>
+          <kbd>⌘K</kbd>
+        </button>
+        <button class="topbar__bell" id="bellBtn" aria-label="Notifications" hx-get="/api/notifications/" hx-trigger="click" hx-target="#notificationPanel">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 0 1-3.46 0"/></svg>
+          <span class="topbar__bell-dot"></span>
+        </button>
+        <div class="topbar__avatar">ML</div>
+      </header>
+
+      <!-- Content -->
+      <main class="content" id="main-content" role="main">
+        <h1 class="content__title" style="margin-bottom:var(--sp-4)">Administration</h1>
+
+        <!-- ============================================================
+             TABS
+             ============================================================ -->
+        <div class="admin__tabs" role="tablist">
+          <div class="admin__tab admin__tab--active" role="tab" data-tab="general" aria-selected="true">Général</div>
+          <div class="admin__tab" role="tab" data-tab="roles" aria-selected="false">Rôles & Permissions</div>
+          <div class="admin__tab" role="tab" data-tab="connectors" aria-selected="false">Connecteurs</div>
+          <div class="admin__tab" role="tab" data-tab="security" aria-selected="false">Sécurité</div>
+        </div>
+
+        <!-- ============================================================
+             GENERAL TAB
+             ============================================================ -->
+        <div class="admin__panel admin__panel--active" id="panel-general">
+
+          <!-- Organization section -->
+          <div class="admin-section">
+            <div class="admin-section__title">Organisation</div>
+            <div class="admin-section__desc">Informations générales de votre entreprise.</div>
+            <div class="admin-form__grid">
+              <div class="admin-form__row">
+                <label class="admin-form__label" for="orgName">Nom de l'entreprise</label>
+                <input class="input" id="orgName" type="text" value="Archimède Solutions SAS" hx-post="/api/admin/settings/" hx-trigger="blur">
+              </div>
+              <div class="admin-form__row">
+                <label class="admin-form__label" for="orgDomain">Domaine</label>
+                <input class="input" id="orgDomain" type="text" value="archimede-solutions.fr" hx-post="/api/admin/settings/" hx-trigger="blur">
+              </div>
+              <div class="admin-form__row">
+                <label class="admin-form__label" for="orgTz">Fuseau horaire</label>
+                <select class="select" id="orgTz" hx-post="/api/admin/settings/" hx-trigger="change">
+                  <option selected>Europe/Paris (UTC+1)</option>
+                  <option>Europe/London (UTC+0)</option>
+                  <option>America/New_York (UTC-5)</option>
+                </select>
+              </div>
+              <div class="admin-form__row">
+                <label class="admin-form__label" for="orgCurrency">Devise</label>
+                <select class="select" id="orgCurrency" hx-post="/api/admin/settings/" hx-trigger="change">
+                  <option selected>EUR (€)</option>
+                  <option>USD ($)</option>
+                  <option>GBP (£)</option>
+                </select>
+              </div>
+              <div class="admin-form__row">
+                <label class="admin-form__label" for="orgLang">Langue</label>
+                <select class="select" id="orgLang" hx-post="/api/admin/settings/" hx-trigger="change">
+                  <option selected>Français</option>
+                  <option>English</option>
+                  <option>Español</option>
+                </select>
+              </div>
+            </div>
+          </div>
+
+          <hr class="admin__divider">
+
+          <!-- Email section -->
+          <div class="admin-section">
+            <div class="admin-section__title">Email d'expédition</div>
+            <div class="admin-section__desc">Configuration de l'adresse d'envoi pour les emails automatiques.</div>
+            <div class="admin-form__grid">
+              <div class="admin-form__row">
+                <label class="admin-form__label" for="emailFrom">Adresse d'expédition</label>
+                <input class="input" id="emailFrom" type="email" value="noreply@archimede-solutions.fr" hx-post="/api/admin/settings/" hx-trigger="blur">
+              </div>
+              <div class="admin-form__row">
+                <label class="admin-form__label" for="emailName">Nom d'affichage</label>
+                <input class="input" id="emailName" type="text" value="CRM Archimède" hx-post="/api/admin/settings/" hx-trigger="blur">
+              </div>
+              <div class="admin-form__row" style="grid-column:1/-1">
+                <label class="admin-form__label" for="emailSig">Signature email</label>
+                <textarea class="input" id="emailSig" style="height:60px;resize:vertical;padding:var(--sp-2)" hx-post="/api/admin/settings/" hx-trigger="blur">Cordialement,
+L'équipe Archimède Solutions</textarea>
+              </div>
+            </div>
+          </div>
+
+          <div style="display:flex;justify-content:flex-end;gap:var(--sp-2);margin-top:var(--sp-4)">
+            <button class="btn btn-secondary btn-xs">Annuler</button>
+            <button class="btn btn-primary btn-xs" hx-post="/api/admin/settings/">Enregistrer</button>
+          </div>
+
+          <!-- Loading state -->
+          <div class="admin__state admin__state--loading" style="display:none" id="state-loading">
+            <span>Enregistrement en cours…</span>
+          </div>
+
+          <!-- Error state -->
+          <div class="admin__state admin__state--error" style="display:none" id="state-error">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width:16px;height:16px;margin-right:6px"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+            <span>Erreur lors de l'enregistrement</span>
+          </div>
+        </div>
+
+        <!-- ============================================================
+             ROLES & PERMISSIONS TAB
+             ============================================================ -->
+        <div class="admin__panel" id="panel-roles" hx-get="/api/admin/roles/" hx-trigger="load">
+
+          <!-- Loading state -->
+          <div class="admin__state admin__state--loading">
+            <span>Chargement des rôles…</span>
+          </div>
+
+          <!-- Filled state -->
+          <div class="admin__state admin__state--filled">
+            <div style="margin-bottom:var(--sp-4)">
+              <div class="admin-section__title">Matrice des rôles et permissions</div>
+              <div class="admin-section__desc">8 rôles prédéfinis couvrant l'ensemble des 17 modules.</div>
+            </div>
+
+            <div class="roles__matrix-wrap">
+              <table class="roles__matrix" aria-label="Matrice des permissions">
+                <th scope="col"ead>
+                  <tr>
+                    <th scope="col">Rôle / Module</th>
+                    <th scope="col">Dashboard</th>
+                    <th scope="col">CRM</th>
+                    <th scope="col">Pipeline</th>
+                    <th scope="col">Tickets</th>
+                    <th scope="col">Factures</th>
+                    <th scope="col">RH</th>
+                    <th scope="col">Reporting</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr>
+                    <td>Admin</td>
+                    <td><span class="roles__perm--full">✅</span></td>
+                    <td><span class="roles__perm--full">✅</span></td>
+                    <td><span class="roles__perm--full">✅</span></td>
+                    <td><span class="roles__perm--full">✅</span></td>
+                    <td><span class="roles__perm--full">✅</span></td>
+                    <td><span class="roles__perm--full">✅</span></td>
+                    <td><span class="roles__perm--full">✅</span></td>
+                  </tr>
+                  <tr>
+                    <td>Dirigeant</td>
+                    <td><span class="roles__perm--full">✅</span></td>
+                    <td><span class="roles__perm--write">✏️</span></td>
+                    <td><span class="roles__perm--write">✏️</span></td>
+                    <td><span class="roles__perm--read">👁️</span></td>
+                    <td><span class="roles__perm--read">👁️</span></td>
+                    <td><span class="roles__perm--read">👁️</span></td>
+                    <td><span class="roles__perm--full">✅</span></td>
+                  </tr>
+                  <tr>
+                    <td>Commercial</td>
+                    <td><span class="roles__perm--read">👁️</span></td>
+                    <td><span class="roles__perm--full">✅</span></td>
+                    <td><span class="roles__perm--full">✅</span></td>
+                    <td><span class="roles__perm--read">👁️</span></td>
+                    <td><span class="roles__perm--none">—</span></td>
+                    <td><span class="roles__perm--none">—</span></td>
+                    <td><span class="roles__perm--read">👁️</span></td>
+                  </tr>
+                  <tr>
+                    <td>Support</td>
+                    <td><span class="roles__perm--read">👁️</span></td>
+                    <td><span class="roles__perm--read">👁️</span></td>
+                    <td><span class="roles__perm--none">—</span></td>
+                    <td><span class="roles__perm--full">✅</span></td>
+                    <td><span class="roles__perm--none">—</span></td>
+                    <td><span class="roles__perm--none">—</span></td>
+                    <td><span class="roles__perm--none">—</span></td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
+
+          <!-- Empty state -->
+          <div class="admin__state admin__state--empty">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" style="width:40px;height:40px;margin-bottom:var(--sp-2)"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
+            <p>Aucune donnée de rôles disponible</p>
+          </div>
+
+          <!-- Error state -->
+          <div class="admin__state admin__state--error" style="display:none">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width:16px;height:16px;margin-right:6px"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+            <span>Erreur lors du chargement des rôles</span>
+          </div>
+        </div>
+
+        <!-- ============================================================
+             CONNECTORS TAB
+             ============================================================ -->
+        <div class="admin__panel" id="panel-connectors" hx-get="/api/admin/connectors/" hx-trigger="load" data-state="loading">
+
+          <!-- Loading state -->
+          <div class="admin__state admin__state--loading" class="state--loading">
+            <span>Chargement des connecteurs…</span>
+          </div>
+
+          <!-- Filled state -->
+          <div class="admin__state admin__state--filled" class="state--filled">
+            <div style="margin-bottom:var(--sp-4)">
+              <div class="admin-section__title">Connecteurs & Intégrations</div>
+              <div class="admin-section__desc">Gérez les connexions avec des services externes.</div>
+            </div>
+
+            <div class="connectors__grid">
+              <div class="connector__card">
+                <div class="connector__icon">🔗</div>
+                <div class="connector__info">
+                  <div class="connector__name">Stripe</div>
+                  <div class="connector__desc">Paiements en ligne</div>
+                </div>
+                <div class="connector__status">
+                  <span class="connector__dot connector__dot--active"></span>
+                </div>
+              </div>
+              <div class="connector__card">
+                <div class="connector__icon">📧</div>
+                <div class="connector__info">
+                  <div class="connector__name">Sendgrid</div>
+                  <div class="connector__desc">Emails transactionnels</div>
+                </div>
+                <div class="connector__status">
+                  <span class="connector__dot connector__dot--active"></span>
+                </div>
+              </div>
+              <div class="connector__card">
+                <div class="connector__icon">📞</div>
+                <div class="connector__info">
+                  <div class="connector__name">Twilio</div>
+                  <div class="connector__desc">SMS et appels</div>
+                </div>
+                <div class="connector__status">
+                  <span class="connector__dot connector__dot--inactive"></span>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Empty state -->
+          <div class="admin__state admin__state--empty" class="state--empty">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" style="width:40px;height:40px;margin-bottom:var(--sp-2)"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
+            <p>Aucun connecteur disponible</p>
+          </div>
+
+          <!-- Error state -->
+          <div class="admin__state admin__state--error" style="display:none" class="state--error">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width:16px;height:16px;margin-right:6px"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+            <span>Erreur lors du chargement des connecteurs</span>
+          </div>
+        </div>
+
+        <!-- ============================================================
+             SECURITY TAB
+             ============================================================ -->
+        <div class="admin__panel" id="panel-security" data-state="filled">
+
+          <div class="admin-section">
+            <div class="admin-section__title">Authentification</div>
+            <div class="admin-section__desc">Paramètres de sécurité pour l'accès utilisateur.</div>
+
+            <div class="admin-form__row" style="margin-bottom:var(--sp-4)">
+              <label class="admin-form__label">MFA obligatoire</label>
+              <div style="display:flex;align-items:center;gap:var(--sp-3);margin-top:var(--sp-2)">
+                <button class="toggle toggle--on" aria-label="MFA obligatoire activé"></button>
+                <span style="font-size:var(--text-sm);color:var(--text-secondary)">Tous les administrateurs doivent utiliser 2FA</span>
+              </div>
+            </div>
+
+            <div class="admin-form__row">
+              <label class="admin-form__label" for="sessionTimeout">Délai d'inactivité (minutes)</label>
+              <input class="input" id="sessionTimeout" type="number" value="30" min="5" max="480" hx-post="/api/admin/settings/" hx-trigger="blur">
+            </div>
+          </div>
+
+          <hr class="admin__divider">
+
+          <div class="admin-section">
+            <div class="admin-section__title">Audit & Logs</div>
+            <div class="admin-section__desc">Historique des actions utilisateurs et modifications système.</div>
+
+            <div style="background:var(--bg-muted);border:1px solid var(--border-subtle);border-radius:var(--radius-lg);padding:var(--sp-4)">
+              <p style="font-size:var(--text-sm);color:var(--text-secondary);line-height:var(--leading-relaxed)">
+                Le journal d'audit enregistre toutes les actions critiques : connexions, modifications de rôles, changements de configuration.
+              </p>
+              <button class="btn btn-secondary btn-xs" style="margin-top:var(--sp-3)" hx-get="/api/admin/audit-log/">Consulter les logs</button>
+            </div>
+          </div>
+        </div>
+
+      </main>
+    </div>
+
+  </div>
+
+  <!-- ============================================================
+       COMMAND PALETTE
+       ============================================================ -->
+  <div class="cmd-palette" id="cmdOverlay" role="dialog" aria-modal="true" aria-label="Recherche globale">
+    <div class="cmd-palette__dialog">
+      <div class="cmd-palette__input-wrap">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+        <input class="cmd-palette__input" id="cmdInput" type="text" placeholder="Rechercher un paramètre, un rôle…" autocomplete="off" aria-label="Terme de recherche" hx-get="/api/search/" hx-trigger="input changed delay:300ms" hx-target="#cmdResults">
+      </div>
+      <div class="cmd-palette__results" id="cmdResults">
+        <div class="cmd-palette__group-label">Paramètres</div>
+        <div class="cmd-palette__item" tabindex="0">Organisation</div>
+        <div class="cmd-palette__item" tabindex="0">Email</div>
+        <div class="cmd-palette__item" tabindex="0">Sécurité</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ============================================================
+       JAVASCRIPT
+       ============================================================ -->
+  <script>
+    /* -----------------------------------------------------------
+       Tab switching
+       ----------------------------------------------------------- */
+    document.querySelectorAll('.admin__tab').forEach(tab => {
+      tab.addEventListener('click', () => {
+        const tabName = tab.dataset.tab;
+
+        document.querySelectorAll('.admin__tab').forEach(t => {
+          t.classList.remove('admin__tab--active');
+          t.setAttribute('aria-selected', 'false');
+        });
+        tab.classList.add('admin__tab--active');
+        tab.setAttribute('aria-selected', 'true');
+
+        document.querySelectorAll('.admin__panel').forEach(panel => {
+          panel.classList.remove('admin__panel--active');
+        });
+        document.getElementById(`panel-${tabName}`).classList.add('admin__panel--active');
+      });
+    });
+
+    /* -----------------------------------------------------------
+       Sidebar collapse
+       ----------------------------------------------------------- */
+    const sidebar = document.getElementById('sidebar');
+    const sidebarToggle = document.getElementById('sidebarToggle');
+    sidebarToggle.addEventListener('click', () => {
+      sidebar.classList.toggle('sidebar--collapsed');
+      const isCollapsed = sidebar.classList.contains('sidebar--collapsed');
+      sidebarToggle.setAttribute('aria-label', isCollapsed ? 'Étendre la barre latérale' : 'Réduire la barre latérale');
+    });
+
+    /* -----------------------------------------------------------
+       Command palette
+       ----------------------------------------------------------- */
+    const cmdOverlay = document.getElementById('cmdOverlay');
+    const cmdInput = document.getElementById('cmdInput');
+    const searchTrigger = document.getElementById('searchTrigger');
+
+    function openCmdPalette() {
+      cmdOverlay.classList.add('cmd-palette--active');
+      cmdInput.focus();
+    }
+
+    function closeCmdPalette() {
+      cmdOverlay.classList.remove('cmd-palette--active');
+    }
+
+    searchTrigger.addEventListener('click', openCmdPalette);
+    document.addEventListener('keydown', (e) => {
+      if ((e.metaKey || e.ctrlKey) && e.key === 'k') {
+        e.preventDefault();
+        if (cmdOverlay.classList.contains('cmd-palette--active')) {
+          closeCmdPalette();
+        } else {
+          openCmdPalette();
+        }
+      }
+      if (e.key === 'Escape' && cmdOverlay.classList.contains('cmd-palette--active')) {
+        closeCmdPalette();
+      }
+    });
+
+    cmdOverlay.addEventListener('click', (e) => {
+      if (e.target === cmdOverlay) closeCmdPalette();
+    });
+  </script>
+
+</body>
+</html>

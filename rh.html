@@ -1,0 +1,756 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>CRM SaaS — RH & Gestion du Personnel</title>
+  <link rel="stylesheet" href="design-system.css">
+  <style>
+    /* ============================================================
+       Module RH — BEM Structure v2
+       ============================================================ */
+
+    /* Content container */
+    .rh__content {
+      padding: 0;
+      display: flex;
+      flex-direction: column;
+      height: calc(100vh - 44px);
+      overflow: hidden;
+    }
+
+    /* ============================================================
+       VIEW: Liste collaborateurs
+       ============================================================ */
+
+    .rh__list {
+      display: flex;
+      flex-direction: column;
+      flex: 1;
+      overflow: hidden;
+    }
+
+    .rh__list.hidden {
+      display: none;
+    }
+
+    /* Dashboard KPIs */
+    .rh__kpis {
+      display: grid;
+      grid-template-columns: repeat(6, 1fr);
+      gap: var(--sp-3);
+      padding: var(--sp-4) var(--sp-5) var(--sp-2);
+      flex-shrink: 0;
+    }
+
+    .rh__kpi {
+      background: var(--bg-surface);
+      border: 1px solid var(--border-subtle);
+      border-radius: var(--radius-lg);
+      padding: var(--sp-3) var(--sp-4);
+    }
+
+    .rh__kpi-label {
+      font-size: var(--text-xs);
+      color: var(--text-tertiary);
+      margin-bottom: var(--sp-1);
+      display: flex;
+      align-items: center;
+      gap: var(--sp-1);
+    }
+
+    .rh__kpi-label svg {
+      width: 13px;
+      height: 13px;
+    }
+
+    .rh__kpi-value {
+      font-size: var(--text-xl);
+      font-weight: 700;
+      color: var(--text-primary);
+      font-variant-numeric: tabular-nums;
+    }
+
+    .rh__kpi-sub {
+      font-size: var(--text-xs);
+      color: var(--text-muted);
+      margin-top: 2px;
+    }
+
+    /* Toolbar */
+    .rh__toolbar {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: var(--sp-2) var(--sp-5);
+      border-bottom: 1px solid var(--border-subtle);
+      flex-shrink: 0;
+      background: var(--bg-surface);
+      gap: var(--sp-2);
+    }
+
+    .rh__toolbar-left {
+      display: flex;
+      align-items: center;
+      gap: var(--sp-2);
+    }
+
+    .rh__toolbar-right {
+      display: flex;
+      align-items: center;
+      gap: var(--sp-2);
+    }
+
+    .rh__search-wrap {
+      position: relative;
+      display: flex;
+      align-items: center;
+    }
+
+    .rh__search-wrap svg {
+      position: absolute;
+      left: 8px;
+      color: var(--text-muted);
+      pointer-events: none;
+      width: 14px;
+      height: 14px;
+    }
+
+    .rh__search {
+      padding: var(--sp-1-5) var(--sp-2-5) var(--sp-1-5) 28px;
+      font-size: var(--text-xs);
+      border: 1px solid var(--border-default);
+      border-radius: var(--radius-md);
+      background: var(--bg-surface);
+      width: 220px;
+      color: var(--text-primary);
+    }
+
+    .rh__search:focus {
+      border-color: var(--accent-500);
+      box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.15);
+      outline: none;
+    }
+
+    .rh__filter {
+      padding: var(--sp-1-5) var(--sp-2-5);
+      font-size: var(--text-xs);
+      border: 1px solid var(--border-default);
+      border-radius: var(--radius-md);
+      background: var(--bg-surface);
+      color: var(--text-secondary);
+      cursor: pointer;
+    }
+
+    /* Table wrapper */
+    .rh__table-wrap {
+      flex: 1;
+      overflow-y: auto;
+    }
+
+    .rh__table {
+      width: 100%;
+      border-collapse: collapse;
+    }
+
+    .rh__table thead {
+      position: sticky;
+      top: 0;
+      z-index: 10;
+      background: var(--bg-surface);
+    }
+
+    .rh__table th {
+      font-size: 10px;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.04em;
+      color: var(--text-muted);
+      text-align: left;
+      padding: var(--sp-2) var(--sp-3);
+      border-bottom: 1px solid var(--border-subtle);
+      white-space: nowrap;
+      cursor: pointer;
+      user-select: none;
+    }
+
+    .rh__table th:hover {
+      color: var(--text-primary);
+    }
+
+    .rh__table td {
+      font-size: var(--text-xs);
+      padding: var(--sp-2) var(--sp-3);
+      border-bottom: 1px solid var(--border-subtle);
+      color: var(--text-secondary);
+      vertical-align: middle;
+    }
+
+    .rh__table tr {
+      cursor: pointer;
+    }
+
+    .rh__table tr:hover td {
+      background: var(--bg-hover);
+    }
+
+    /* ============================================================
+       STATE: Empty
+       ============================================================ */
+
+    .rh__empty {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      padding: var(--sp-10);
+      color: var(--text-muted);
+    }
+
+    .rh__empty svg {
+      width: 48px;
+      height: 48px;
+      color: var(--gray-300);
+      margin-bottom: var(--sp-3);
+    }
+
+    .rh__empty-title {
+      font-size: var(--text-md);
+      font-weight: 500;
+      color: var(--text-secondary);
+      margin-bottom: var(--sp-1);
+    }
+
+    .rh__empty-desc {
+      font-size: var(--text-xs);
+      max-width: 280px;
+      text-align: center;
+      line-height: var(--leading-relaxed);
+    }
+
+    /* ============================================================
+       STATE: Loading
+       ============================================================ */
+
+    .rh__loading {
+      flex: 1;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: var(--text-muted);
+    }
+
+    .rh__spinner {
+      width: 24px;
+      height: 24px;
+      border: 2px solid var(--gray-200);
+      border-top-color: var(--accent-500);
+      border-radius: 50%;
+      animation: spin 0.8s linear infinite;
+    }
+
+    @keyframes spin {
+      to { transform: rotate(360deg); }
+    }
+
+    /* ============================================================
+       STATE: Error
+       ============================================================ */
+
+    .rh__error {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      padding: var(--sp-10);
+      color: var(--color-danger);
+    }
+
+    .rh__error svg {
+      width: 48px;
+      height: 48px;
+      color: var(--color-danger);
+      margin-bottom: var(--sp-3);
+    }
+
+    .rh__error-title {
+      font-size: var(--text-md);
+      font-weight: 500;
+      margin-bottom: var(--sp-1);
+    }
+
+    .rh__error-desc {
+      font-size: var(--text-xs);
+      max-width: 280px;
+      text-align: center;
+    }
+
+    /* ============================================================
+       Shared Components
+       ============================================================ */
+
+    .rh__pill {
+      display: inline-flex;
+      align-items: center;
+      padding: 1px 8px;
+      border-radius: var(--radius-full);
+      font-size: 10px;
+      font-weight: 600;
+      white-space: nowrap;
+    }
+
+    .rh__pill--actif {
+      background: #dcfce7;
+      color: #166534;
+    }
+
+    .rh__pill--essai {
+      background: #fef3c7;
+      color: #92400e;
+    }
+
+    .rh__pill--suspendu {
+      background: #fee2e2;
+      color: #991b1b;
+    }
+
+    .rh__pill--cdi {
+      background: #dbeafe;
+      color: #1e40af;
+    }
+
+    .rh__pill--cdd {
+      background: #fef3c7;
+      color: #92400e;
+    }
+
+    .rh__pill--stage {
+      background: #f3e8ff;
+      color: #6b21a8;
+    }
+
+    /* Button */
+    .rh__btn {
+      display: inline-flex;
+      align-items: center;
+      gap: var(--sp-1);
+      padding: var(--sp-1-5) var(--sp-3);
+      font-size: var(--text-xs);
+      font-weight: 500;
+      border-radius: var(--radius-md);
+      cursor: pointer;
+      transition: all var(--duration-fast) var(--ease-in-out);
+      border: 1px solid transparent;
+      white-space: nowrap;
+    }
+
+    .rh__btn--primary {
+      background: var(--accent-600);
+      color: #fff;
+      border-color: var(--accent-600);
+    }
+
+    .rh__btn--primary:hover {
+      background: var(--accent-700);
+    }
+
+    .rh__btn--secondary {
+      background: var(--bg-surface);
+      color: var(--text-secondary);
+      border-color: var(--border-default);
+    }
+
+    .rh__btn--secondary:hover {
+      background: var(--bg-hover);
+    }
+
+    .rh__btn svg {
+      width: 13px;
+      height: 13px;
+    }
+
+    .rh__avatar {
+      width: 22px;
+      height: 22px;
+      border-radius: var(--radius-full);
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 8px;
+      font-weight: 700;
+      color: #fff;
+      flex-shrink: 0;
+    }
+
+    /* ============================================================
+       STATE MANAGEMENT (4 states: loading, error, empty, filled)
+       ============================================================ */
+    [data-state="loading"] .state--filled,
+    [data-state="loading"] .state--error,
+    [data-state="loading"] .state--empty { display: none; }
+    [data-state="loading"] .state--loading { display: block; }
+
+    [data-state="error"] .state--filled,
+    [data-state="error"] .state--loading,
+    [data-state="error"] .state--empty { display: none; }
+    [data-state="error"] .state--error { display: flex; }
+
+    [data-state="empty"] .state--filled,
+    [data-state="empty"] .state--loading,
+    [data-state="empty"] .state--error { display: none; }
+    [data-state="empty"] .state--empty { display: flex; }
+
+    [data-state="filled"] .state--loading,
+    [data-state="filled"] .state--error,
+    [data-state="filled"] .state--empty { display: none; }
+    [data-state="filled"] .state--filled { display: block; }
+
+    /* Skip link */
+    .skip-link {
+      position: absolute;
+      top: -40px;
+      left: 0;
+      background: var(--accent-600);
+      color: #fff;
+      padding: 8px;
+      border-radius: 0 0 4px 0;
+      z-index: 9999;
+    }
+
+    .skip-link:focus {
+      top: 0;
+    }
+  </style>
+</head>
+<body>
+  <a href="#main-content" class="skip-link">Aller au contenu</a>
+  <div class="app">
+
+    <!-- ============================================================
+         SIDEBAR (from shell.html v2)
+         ============================================================ -->
+    <aside class="sidebar" id="sidebar" role="navigation" aria-label="Navigation principale">
+      <div class="sidebar__header">
+        <div class="sidebar__logo">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width:20px;height:20px"><rect x="3" y="3" width="7" height="7" rx="2"/><rect x="14" y="3" width="7" height="7" rx="2"/><rect x="3" y="14" width="7" height="7" rx="2"/><circle cx="17.5" cy="17.5" r="3.5"/></svg>
+          <span>CRM SaaS</span>
+        </div>
+        <button class="sidebar__toggle" id="sidebarToggle" aria-label="Réduire la sidebar">
+          <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" style="width:16px;height:16px"><path d="M10 3L5 8l5 5"/></svg>
+        </button>
+      </div>
+
+      <nav class="sidebar__nav">
+        <div class="sidebar__section">
+          <div class="sidebar__section-label">Ressources</div>
+          <a href="rh.html" class="sidebar__item sidebar__item--active" data-page="rh">
+            <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><circle cx="8" cy="5" r="3"/><path d="M2 14c0-2.21 2.69-4 6-4s6 1.79 6 4"/></svg>
+            <span>RH & Personnel</span>
+          </a>
+          <a href="projets.html" class="sidebar__item" data-page="projets">
+            <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M3 3h4v4H3zM9 3h4v4H9zM3 9h4v4H3zM9 9h4v4H9z"/></svg>
+            <span>Projets</span>
+          </a>
+          <a href="ged.html" class="sidebar__item" data-page="ged">
+            <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M2 4h3l2 2h7v7H2V4z"/></svg>
+            <span>GED</span>
+          </a>
+        </div>
+      </nav>
+
+      <div class="sidebar__footer">
+        <div class="sidebar__user">
+          <div class="sidebar__user-avatar">SL</div>
+          <div class="sidebar__user-info">
+            <div class="sidebar__user-name">Sophie Lemaire</div>
+            <div class="sidebar__user-role">Administratrice</div>
+          </div>
+        </div>
+      </div>
+    </aside>
+
+    <!-- ============================================================
+         MAIN AREA
+         ============================================================ -->
+    <div class="main">
+
+      <!-- Top bar -->
+      <header class="topbar" role="banner">
+        <nav class="topbar__breadcrumb" aria-label="Fil d'Ariane">
+          <span class="topbar__breadcrumb-current">RH & Personnel</span>
+        </nav>
+        <button class="topbar__search" aria-label="Recherche globale (Ctrl+K)">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/>
+          </svg>
+          <span>Rechercher…</span>
+          <kbd>⌘K</kbd>
+        </button>
+        <button class="topbar__bell" aria-label="Notifications">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 0 1-3.46 0"/>
+          </svg>
+          <span class="topbar__bell-dot"></span>
+        </button>
+        <div class="topbar__avatar" data-tooltip="Sophie Lemaire">SL</div>
+      </header>
+
+      <!-- Content area -->
+      <main class="content" id="main-content" role="main">
+
+        <!-- ====== VIEW: Liste collaborateurs ====== -->
+        <div class="rh__content">
+
+          <!-- ====== SECTION : KPIs ====== -->
+          <section class="rh__kpis" aria-label="Indicateurs clés">
+            <div class="rh__kpi">
+              <div class="rh__kpi-label">
+                <svg viewBox="0 0 16 16" fill="currentColor"><circle cx="8" cy="5" r="2.5"/><path d="M2 12c0-1.5 2-3 6-3s6 1.5 6 3v2H2v-2z"/></svg>
+                Collaborateurs
+              </div>
+              <div class="rh__kpi-value">42</div>
+              <div class="rh__kpi-sub">12 CDI, 8 CDD, 2 stages</div>
+            </div>
+            <div class="rh__kpi">
+              <div class="rh__kpi-label">
+                <svg viewBox="0 0 16 16" fill="currentColor"><path d="M2 8h12M2 12h8M2 4h10"/></svg>
+                En présence
+              </div>
+              <div class="rh__kpi-value">38</div>
+              <div class="rh__kpi-sub">4 en congé</div>
+            </div>
+            <div class="rh__kpi">
+              <div class="rh__kpi-label">
+                <svg viewBox="0 0 16 16" fill="currentColor"><path d="M4 3h8v10H4z"/></svg>
+                Jours utilisés
+              </div>
+              <div class="rh__kpi-value">156</div>
+              <div class="rh__kpi-sub">/ 625 disponibles</div>
+            </div>
+            <div class="rh__kpi">
+              <div class="rh__kpi-label">
+                <svg viewBox="0 0 16 16" fill="currentColor"><path d="M8 2v12M2 8h12"/></svg>
+                Contrats expirés
+              </div>
+              <div class="rh__kpi-value">3</div>
+              <div class="rh__kpi-sub">à renouveler</div>
+            </div>
+            <div class="rh__kpi">
+              <div class="rh__kpi-label">
+                <svg viewBox="0 0 16 16" fill="currentColor"><circle cx="8" cy="8" r="6"/><path d="M8 4v4l3 2"/></svg>
+                Entretiens
+              </div>
+              <div class="rh__kpi-value">7</div>
+              <div class="rh__kpi-sub">ce trimestre</div>
+            </div>
+            <div class="rh__kpi">
+              <div class="rh__kpi-label">
+                <svg viewBox="0 0 16 16" fill="currentColor"><path d="M3 4h10v9H3z"/></svg>
+                Formations
+              </div>
+              <div class="rh__kpi-value">12</div>
+              <div class="rh__kpi-sub">planifiées</div>
+            </div>
+          </section>
+
+          <!-- ====== SECTION : Toolbar (Recherche et filtres) ====== -->
+          <div class="rh__toolbar">
+            <div class="rh__toolbar-left">
+              <div class="rh__search-wrap">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                  <circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/>
+                </svg>
+                <input
+                  type="text"
+                  class="rh__search"
+                  placeholder="Rechercher un collaborateur…"
+                  aria-label="Rechercher parmi les collaborateurs"
+                  hx-get="/api/rh/collaborateurs/?search="
+                  hx-trigger="keyup changed delay:300ms"
+                  hx-target=".rh__table-wrap"
+                />
+              </div>
+              <select class="rh__filter" aria-label="Filtrer par statut" hx-get="/api/rh/collaborateurs/?statut=" hx-trigger="change" hx-target=".rh__table-wrap">
+                <option>Tous les statuts</option>
+                <option>Actif</option>
+                <option>Essai</option>
+                <option>En pause</option>
+              </select>
+            </div>
+            <div class="rh__toolbar-right">
+              <button class="rh__btn rh__btn--primary">
+                <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5">
+                  <line x1="8" y1="3" x2="8" y2="13"/><line x1="3" y1="8" x2="13" y2="8"/>
+                </svg>
+                Ajouter
+              </button>
+            </div>
+          </div>
+
+          <!-- ====== TABLE : Liste des collaborateurs ====== -->
+          <!-- Table: Loaded state -->
+          <div class="rh__table-wrap" data-state="filled" hx-get="/api/rh/collaborateurs/">
+            <table class="rh__table" role="grid" aria-label="Liste des collaborateurs">
+              <th scope="col"ead>
+                <tr>
+                  <th scope="col" hx-get="/api/rh/collaborateurs/?sort=nom" hx-trigger="click" hx-target=".rh__table-wrap" hx-swap="innerHTML">Nom</th>
+                  <th scope="col">Poste</th>
+                  <th scope="col">Département</th>
+                  <th scope="col" hx-get="/api/rh/collaborateurs/?sort=statut" hx-trigger="click" hx-target=".rh__table-wrap" hx-swap="innerHTML">Statut</th>
+                  <th scope="col">Embauche</th>
+                  <th scope="col">Contrat</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr tabindex="0">
+                  <td>
+                    <div style="display: flex; align-items: center; gap: 8px;">
+                      <div class="rh__avatar" style="background: var(--accent-500);">MP</div>
+                      <span>Martin Poulain</span>
+                    </div>
+                  </td>
+                  <td>Directeur Technique</td>
+                  <td>Technique</td>
+                  <td><span class="rh__pill rh__pill--actif">Actif</span></td>
+                  <td style="font-family: var(--font-mono); font-size: 10px;">2021-03-15</td>
+                  <td><span class="rh__pill rh__pill--cdi">CDI</span></td>
+                </tr>
+                <tr tabindex="0">
+                  <td>
+                    <div style="display: flex; align-items: center; gap: 8px;">
+                      <div class="rh__avatar" style="background: #a78bfa;">SR</div>
+                      <span>Sarah Rousseau</span>
+                    </div>
+                  </td>
+                  <td>Développeuse Senior</td>
+                  <td>Technique</td>
+                  <td><span class="rh__pill rh__pill--actif">Actif</span></td>
+                  <td style="font-family: var(--font-mono); font-size: 10px;">2022-06-01</td>
+                  <td><span class="rh__pill rh__pill--cdi">CDI</span></td>
+                </tr>
+                <tr tabindex="0">
+                  <td>
+                    <div style="display: flex; align-items: center; gap: 8px;">
+                      <div class="rh__avatar" style="background: #34d399;">TC</div>
+                      <span>Thomas Chauvet</span>
+                    </div>
+                  </td>
+                  <td>Développeur Frontend</td>
+                  <td>Technique</td>
+                  <td><span class="rh__pill rh__pill--essai">Essai</span></td>
+                  <td style="font-family: var(--font-mono); font-size: 10px;">2024-11-01</td>
+                  <td><span class="rh__pill rh__pill--cdd">CDD</span></td>
+                </tr>
+                <tr tabindex="0">
+                  <td>
+                    <div style="display: flex; align-items: center; gap: 8px;">
+                      <div class="rh__avatar" style="background: #fbbf24;">EM</div>
+                      <span>Émilie Marchand</span>
+                    </div>
+                  </td>
+                  <td>Manager Commercial</td>
+                  <td>Commercial</td>
+                  <td><span class="rh__pill rh__pill--actif">Actif</span></td>
+                  <td style="font-family: var(--font-mono); font-size: 10px;">2020-09-10</td>
+                  <td><span class="rh__pill rh__pill--cdi">CDI</span></td>
+                </tr>
+                <tr tabindex="0">
+                  <td>
+                    <div style="display: flex; align-items: center; gap: 8px;">
+                      <div class="rh__avatar" style="background: #f87171;">LB</div>
+                      <span>Léa Bernard</span>
+                    </div>
+                  </td>
+                  <td>Stagiaire RH</td>
+                  <td>Administration</td>
+                  <td><span class="rh__pill rh__pill--actif">Actif</span></td>
+                  <td style="font-family: var(--font-mono); font-size: 10px;">2024-09-02</td>
+                  <td><span class="rh__pill rh__pill--stage">Stage</span></td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+
+        </div>
+
+      </main>
+
+    </div>
+
+  </div>
+
+  <!-- ============================================================
+       COMMAND PALETTE (from shell.html v2)
+       ============================================================ -->
+  <div class="cmd-palette" id="cmdOverlay" role="dialog" aria-modal="true" aria-label="Recherche globale">
+    <div class="cmd-palette__dialog">
+      <div class="cmd-palette__input-wrap">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/>
+        </svg>
+        <input
+          class="cmd-palette__input"
+          id="cmdInput"
+          type="text"
+          placeholder="Rechercher un contact, un projet…"
+          autocomplete="off"
+          aria-label="Terme de recherche"
+          hx-get="/api/search/"
+          hx-trigger="input changed delay:300ms"
+          hx-target="#cmdResults"
+        />
+      </div>
+      <div class="cmd-palette__results" id="cmdResults"></div>
+    </div>
+  </div>
+
+  <!-- ============================================================
+       JAVASCRIPT
+       ============================================================ -->
+  <script>
+    /* Sidebar toggle */
+    const sidebar = document.getElementById('sidebar');
+    const sidebarToggle = document.getElementById('sidebarToggle');
+
+    if (sidebarToggle) {
+      sidebarToggle.addEventListener('click', () => {
+        sidebar.classList.toggle('sidebar__collapsed');
+        const isCollapsed = sidebar.classList.contains('sidebar__collapsed');
+        sidebarToggle.setAttribute('aria-label', isCollapsed ? 'Étendre la barre latérale' : 'Réduire la barre latérale');
+      });
+    }
+
+    /* Command palette: Ctrl+K / Cmd+K */
+    const cmdOverlay = document.getElementById('cmdOverlay');
+    const cmdInput = document.getElementById('cmdInput');
+
+    document.addEventListener('keydown', (e) => {
+      if ((e.ctrlKey || e.metaKey) && e.key === 'k') {
+        e.preventDefault();
+        cmdOverlay.classList.toggle('cmd-palette--open');
+        if (cmdOverlay.classList.contains('cmd-palette--open')) {
+          cmdInput.focus();
+        }
+      }
+      if (e.key === 'Escape') {
+        cmdOverlay.classList.remove('cmd-palette--open');
+      }
+    });
+
+    /* Row selection via keyboard */
+    document.querySelectorAll('.rh__table tbody tr').forEach((row) => {
+      row.addEventListener('click', () => {
+        console.log('Row selected:', row);
+      });
+      row.addEventListener('keydown', (e) => {
+        if (e.key === 'Enter') {
+          row.click();
+        }
+      });
+    });
+  </script>
+
+</body>
+</html>

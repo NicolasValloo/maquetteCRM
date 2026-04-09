@@ -1,0 +1,1552 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>CRM SaaS — CRM</title>
+  <link rel="stylesheet" href="design-system.css">
+  <style>
+    /* ========================================================
+       CRM Page — Page-specific styles (BEM)
+       ======================================================== */
+
+    /* --- KPI Row --- */
+    .kpi-row {
+      display: flex;
+      align-items: center;
+      gap: var(--sp-3);
+      margin-bottom: var(--sp-5);
+    }
+
+    .kpi {
+      background: var(--bg-surface);
+      border: 1px solid var(--border-subtle);
+      border-radius: var(--radius-lg);
+      padding: var(--sp-2-5) var(--sp-4);
+      display: flex;
+      align-items: center;
+      gap: var(--sp-3);
+      cursor: pointer;
+      transition: all var(--duration-fast) var(--ease-in-out);
+      flex: 0 0 auto;
+    }
+    .kpi:hover {
+      border-color: var(--border-strong);
+      box-shadow: var(--shadow-sm);
+    }
+    .kpi--active {
+      border-color: var(--accent-500);
+      box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.08);
+    }
+
+    .kpi__icon {
+      width: 34px;
+      height: 34px;
+      border-radius: var(--radius-lg);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      flex-shrink: 0;
+    }
+    .kpi__icon svg {
+      width: 17px;
+      height: 17px;
+    }
+    .kpi__icon--indigo {
+      background: #eef2ff;
+      color: #4f46e5;
+    }
+    .kpi__icon--blue {
+      background: #eff6ff;
+      color: #2563eb;
+    }
+    .kpi__icon--green {
+      background: #f0fdf4;
+      color: #16a34a;
+    }
+
+    .kpi__info {
+      min-width: 0;
+    }
+    .kpi__label {
+      font-size: var(--text-xs);
+      font-weight: var(--weight-medium);
+      color: var(--text-tertiary);
+      text-transform: uppercase;
+      letter-spacing: 0.04em;
+    }
+    .kpi__value {
+      font-size: var(--text-lg);
+      font-weight: var(--weight-bold);
+      letter-spacing: var(--tracking-tight);
+      font-variant-numeric: tabular-nums;
+    }
+
+    .kpi-actions {
+      display: flex;
+      gap: var(--sp-2);
+      margin-left: auto;
+      flex-shrink: 0;
+    }
+
+    /* --- Search Bar --- */
+    .search-bar {
+      display: flex;
+      align-items: center;
+      gap: var(--sp-2);
+      padding: var(--sp-3) var(--sp-4);
+      background: var(--bg-surface);
+      border: 1px solid var(--border-subtle);
+      border-radius: var(--radius-lg);
+      margin-bottom: var(--sp-4);
+      flex-wrap: wrap;
+    }
+
+    .search-bar__input-wrap {
+      display: flex;
+      align-items: center;
+      gap: var(--sp-2);
+      flex: 1;
+      min-width: 200px;
+    }
+    .search-bar__input-wrap svg {
+      width: 16px;
+      height: 16px;
+      color: var(--text-muted);
+      flex-shrink: 0;
+    }
+
+    .search-bar__input {
+      flex: 1;
+      border: none;
+      background: transparent;
+      font-size: var(--text-md);
+      color: var(--text-primary);
+      height: 28px;
+    }
+    .search-bar__input::placeholder {
+      color: var(--text-muted);
+    }
+
+    .search-bar__filters {
+      display: flex;
+      align-items: center;
+      gap: var(--sp-1-5);
+      flex-wrap: wrap;
+    }
+
+    .search-bar__sep {
+      width: 1px;
+      height: 20px;
+      background: var(--border-default);
+      margin: 0 var(--sp-1);
+    }
+
+    .search-bar__filter-count {
+      font-size: var(--text-xs);
+      font-weight: var(--weight-semi);
+      color: var(--accent-600);
+      background: var(--accent-50);
+      padding: 2px 8px;
+      border-radius: var(--radius-full);
+      display: none;
+    }
+    .search-bar__filter-count--visible {
+      display: inline-flex;
+    }
+
+    .search-bar__clear {
+      font-size: var(--text-xs);
+      color: var(--text-muted);
+      cursor: pointer;
+      display: none;
+      transition: color var(--duration-fast) var(--ease-in-out);
+    }
+    .search-bar__clear:hover {
+      color: var(--color-danger);
+    }
+    .search-bar__clear--visible {
+      display: inline;
+    }
+
+    .search-bar__adv-btn {
+      font-size: var(--text-xs);
+      font-weight: var(--weight-medium);
+      color: var(--accent-600);
+      cursor: pointer;
+      padding: 4px 10px;
+      border-radius: var(--radius-md);
+      transition: all var(--duration-fast) var(--ease-in-out);
+      white-space: nowrap;
+      border: 1px solid var(--accent-200);
+      background: var(--accent-50);
+    }
+    .search-bar__adv-btn:hover {
+      background: var(--accent-100);
+    }
+
+    /* --- Tabs --- */
+    .tabs {
+      display: flex;
+      gap: var(--sp-0-5);
+      border-bottom: 1px solid var(--border-subtle);
+      margin-bottom: var(--sp-4);
+      role: tablist;
+    }
+
+    .tabs__item {
+      padding: var(--sp-2) var(--sp-4);
+      font-size: var(--text-sm);
+      font-weight: var(--weight-medium);
+      color: var(--text-tertiary);
+      border-bottom: 2px solid transparent;
+      transition: all var(--duration-fast) var(--ease-in-out);
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      gap: var(--sp-1-5);
+      role: tab;
+    }
+    .tabs__item:hover {
+      color: var(--text-primary);
+    }
+    .tabs__item--active {
+      color: var(--text-primary);
+      border-bottom-color: var(--gray-900);
+    }
+
+    .tabs__count {
+      font-size: var(--text-xs);
+      font-weight: var(--weight-semi);
+      color: var(--text-muted);
+      background: var(--gray-100);
+      padding: 1px 6px;
+      border-radius: var(--radius-full);
+      font-variant-numeric: tabular-nums;
+    }
+    .tabs__item--active .tabs__count {
+      background: var(--gray-900);
+      color: var(--text-inverse);
+    }
+
+    /* --- Table Container --- */
+    .table-container {
+      background: var(--bg-surface);
+      border: 1px solid var(--border-subtle);
+      border-radius: var(--radius-lg);
+      overflow: hidden;
+    }
+
+    .table-container__toolbar {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: var(--sp-2-5) var(--sp-4);
+      border-bottom: 1px solid var(--border-subtle);
+    }
+
+    .table-container__toolbar-left {
+      display: flex;
+      align-items: center;
+      gap: var(--sp-2);
+      font-size: var(--text-sm);
+      color: var(--text-secondary);
+    }
+
+    .table-container__toolbar-right {
+      display: flex;
+      align-items: center;
+      gap: var(--sp-2);
+    }
+
+    /* --- Table --- */
+    .table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: var(--text-sm);
+    }
+
+    .table thead {
+      background: var(--bg-primary);
+      border-bottom: 1px solid var(--border-subtle);
+    }
+
+    .table th {
+      padding: var(--sp-2-5) var(--sp-4);
+      text-align: left;
+      font-weight: var(--weight-semi);
+      color: var(--text-secondary);
+      white-space: nowrap;
+    }
+
+    .table th.sortable {
+      cursor: pointer;
+      user-select: none;
+      transition: color var(--duration-fast) var(--ease-in-out);
+    }
+    .table th.sortable:hover {
+      color: var(--text-primary);
+    }
+
+    .table__sort-icon {
+      display: inline-flex;
+      margin-left: 2px;
+      opacity: 0.4;
+      font-size: 10px;
+      vertical-align: middle;
+    }
+    .table th.sorted .table__sort-icon {
+      opacity: 1;
+    }
+    .table th.sorted-asc .table__sort-icon::after {
+      content: '↑';
+    }
+    .table th.sorted-desc .table__sort-icon::after {
+      content: '↓';
+    }
+
+    .table tbody tr {
+      border-bottom: 1px solid var(--border-subtle);
+      cursor: pointer;
+      transition: background var(--duration-fast) var(--ease-in-out);
+    }
+    .table tbody tr:hover {
+      background: var(--bg-hover);
+    }
+    .table tbody tr:active {
+      background: var(--bg-active);
+    }
+
+    .table td {
+      padding: var(--sp-2-5) var(--sp-4);
+      color: var(--text-primary);
+    }
+
+    .table td.text-secondary {
+      color: var(--text-secondary);
+    }
+    .table td.text-muted {
+      color: var(--text-muted);
+    }
+    .table td.text-mono {
+      font-family: var(--font-mono);
+      font-size: var(--text-xs);
+    }
+
+    .health-dot {
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+      display: inline-block;
+      margin-right: 6px;
+    }
+    .health-dot--green {
+      background: var(--color-success);
+    }
+    .health-dot--orange {
+      background: var(--color-warning);
+    }
+    .health-dot--red {
+      background: var(--color-danger);
+    }
+    .health-dot--gray {
+      background: var(--gray-300);
+    }
+
+    /* --- Pagination --- */
+    .pagination {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: var(--sp-2-5) var(--sp-4);
+      border-top: 1px solid var(--border-subtle);
+      font-size: var(--text-sm);
+      color: var(--text-secondary);
+    }
+
+    .pagination__info {
+      font-variant-numeric: tabular-nums;
+    }
+
+    .pagination__pages {
+      display: flex;
+      align-items: center;
+      gap: var(--sp-0-5);
+    }
+
+    .pagination__btn {
+      width: 28px;
+      height: 28px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      border-radius: var(--radius-md);
+      font-size: var(--text-sm);
+      font-weight: var(--weight-medium);
+      color: var(--text-secondary);
+      transition: all var(--duration-fast) var(--ease-in-out);
+      cursor: pointer;
+      border: 1px solid transparent;
+      background: transparent;
+    }
+    .pagination__btn:hover:not(:disabled) {
+      background: var(--bg-hover);
+      color: var(--text-primary);
+    }
+    .pagination__btn--active {
+      background: var(--gray-900);
+      color: var(--text-inverse);
+    }
+    .pagination__btn:disabled {
+      opacity: 0.3;
+      pointer-events: none;
+    }
+
+    /* --- Tab Panels --- */
+    .tabs__panel {
+      display: none;
+    }
+    .tabs__panel--active {
+      display: block;
+    }
+
+    /* --- Empty State --- */
+    .empty-state {
+      padding: var(--sp-12) var(--sp-8);
+      text-align: center;
+      color: var(--text-muted);
+    }
+
+    /* --- Slide-over: Contact Form --- */
+    .slideover-overlay {
+      position: fixed;
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      background: rgba(0, 0, 0, 0.5);
+      opacity: 0;
+      visibility: hidden;
+      transition: opacity var(--duration-normal) var(--ease-in-out);
+      z-index: 49;
+    }
+    .slideover-overlay--active {
+      opacity: 1;
+      visibility: visible;
+    }
+
+    .slideover {
+      position: fixed;
+      top: 0;
+      right: 0;
+      bottom: 0;
+      width: 480px;
+      background: var(--bg-primary);
+      box-shadow: var(--shadow-lg);
+      transform: translateX(100%);
+      transition: transform var(--duration-normal) var(--ease-in-out);
+      z-index: 50;
+      display: flex;
+      flex-direction: column;
+    }
+    .slideover--active {
+      transform: translateX(0);
+    }
+
+    .slideover__header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: var(--sp-5) var(--sp-5);
+      border-bottom: 1px solid var(--border-subtle);
+      flex-shrink: 0;
+    }
+
+    .slideover__title {
+      font-size: var(--text-md);
+      font-weight: var(--weight-semi);
+      color: var(--text-primary);
+    }
+
+    .slideover__close {
+      width: 32px;
+      height: 32px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      border-radius: var(--radius-md);
+      background: transparent;
+      color: var(--text-tertiary);
+      cursor: pointer;
+      transition: all var(--duration-fast) var(--ease-in-out);
+      border: 1px solid transparent;
+    }
+    .slideover__close:hover {
+      background: var(--bg-hover);
+      color: var(--text-primary);
+    }
+
+    .slideover__body {
+      flex: 1;
+      overflow-y: auto;
+      padding: var(--sp-5);
+    }
+
+    .slideover__footer {
+      display: flex;
+      justify-content: flex-end;
+      gap: var(--sp-2);
+      padding: var(--sp-3) var(--sp-5);
+      border-top: 1px solid var(--border-subtle);
+      flex-shrink: 0;
+    }
+
+    .form-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: var(--sp-3) var(--sp-4);
+    }
+    .form-grid--full {
+      grid-column: 1 / -1;
+    }
+
+    .form__field {
+      display: flex;
+      flex-direction: column;
+      gap: var(--sp-1);
+    }
+
+    .form__label {
+      font-size: var(--text-xs);
+      font-weight: var(--weight-medium);
+      color: var(--text-secondary);
+    }
+
+    .form__input,
+    .form__select {
+      padding: var(--sp-2) var(--sp-2-5);
+      border: 1px solid var(--border-default);
+      border-radius: var(--radius-md);
+      font-size: var(--text-sm);
+      background: var(--bg-primary);
+      color: var(--text-primary);
+      transition: border-color var(--duration-fast) var(--ease-in-out);
+      font-family: var(--font-sans);
+    }
+    .form__input::placeholder {
+      color: var(--text-muted);
+    }
+    .form__input:focus,
+    .form__select:focus {
+      outline: none;
+      border-color: var(--accent-500);
+      box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.12);
+    }
+
+    /* --- Toast --- */
+    .toast {
+      position: fixed;
+      bottom: 24px;
+      left: 50%;
+      transform: translateX(-50%);
+      background: var(--gray-900);
+      color: #fff;
+      padding: 10px 24px;
+      border-radius: var(--radius-lg);
+      font-size: var(--text-sm);
+      opacity: 0;
+      transition: opacity 0.25s var(--ease-in-out);
+      pointer-events: none;
+      z-index: 9999;
+    }
+    .toast--active {
+      opacity: 1;
+    }
+
+    /* --- Utilities --- */
+    .u-anim--fade-in {
+      animation: fadeIn 0.3s ease-out;
+    }
+    @keyframes fadeIn {
+      from { opacity: 0; }
+      to { opacity: 1; }
+    }
+  </style>
+</head>
+<body>
+
+  <!-- ====== Skip link ====== -->
+  <a href="#main-content" class="skip-link">Aller au contenu</a>
+
+  <!-- ============================================================
+       APP SHELL
+       ============================================================ -->
+  <div class="app" id="app">
+
+    <!-- --------------------------------------------------------
+         SIDEBAR
+         -------------------------------------------------------- -->
+    <aside class="sidebar" id="sidebar" role="navigation" aria-label="Navigation principale">
+      <div class="sidebar__header">
+        <div class="sidebar__logo">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width:20px;height:20px"><rect x="3" y="3" width="7" height="7" rx="2"/><rect x="14" y="3" width="7" height="7" rx="2"/><rect x="3" y="14" width="7" height="7" rx="2"/><circle cx="17.5" cy="17.5" r="3.5"/></svg>
+          <span>CRM SaaS</span>
+        </div>
+        <button class="sidebar__toggle" id="sidebarToggle" aria-label="Réduire la sidebar">
+          <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" style="width:16px;height:16px"><path d="M10 3L5 8l5 5"/></svg>
+        </button>
+      </div>
+
+      <nav class="sidebar__nav">
+        <!-- Principal -->
+        <div class="sidebar__section">
+          <div class="sidebar__section-label">Principal</div>
+          <a href="dashboard.html" class="sidebar__item" data-page="dashboard">
+            <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="2" y="2" width="5" height="5" rx="1"/><rect x="9" y="2" width="5" height="5" rx="1"/><rect x="2" y="9" width="5" height="5" rx="1"/><rect x="9" y="9" width="5" height="5" rx="1"/></svg>
+            <span>Tableau de bord</span>
+            <span class="sidebar__kbd">⌘D</span>
+          </a>
+          <a href="crm.html" class="sidebar__item sidebar__item--active" data-page="crm" aria-current="page">
+            <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M8 8a3 3 0 100-6 3 3 0 000 6zM2 14c0-2.21 2.69-4 6-4s6 1.79 6 4"/></svg>
+            <span>CRM</span>
+            <span class="sidebar__kbd">⌘C</span>
+          </a>
+          <a href="pipeline.html" class="sidebar__item" data-page="pipeline">
+            <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M2 4h12M2 8h8M2 12h10"/></svg>
+            <span>Pipeline</span>
+            <span class="sidebar__kbd">⌘P</span>
+          </a>
+          <a href="devis.html" class="sidebar__item" data-page="devis">
+            <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M4 2v12h8V6l-4-4H4z"/><path d="M8 2v4h4"/></svg>
+            <span>Devis & Catalogue</span>
+          </a>
+        </div>
+
+        <!-- Opérations -->
+        <div class="sidebar__section">
+          <div class="sidebar__section-label">Opérations</div>
+          <a href="abonnements.html" class="sidebar__item" data-page="abonnements">
+            <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M4 6l4-3 4 3v6a1 1 0 01-1 1H5a1 1 0 01-1-1V6z"/></svg>
+            <span>Abonnements</span>
+            <span class="sidebar__item-badge">3</span>
+          </a>
+          <a href="compta-facturation.html" class="sidebar__item" data-page="compta-facturation">
+            <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M4 2v12h8V2H4z"/><path d="M7 5h2M6 8h4M6 11h4"/></svg>
+            <span>Comptabilité commerciale</span>
+          </a>
+          <a href="compta.html" class="sidebar__item" data-page="compta">
+            <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M3 3h10v10H3z"/><path d="M7 7h3M7 10h2"/></svg>
+            <span>Comptabilité</span>
+          </a>
+          <a href="tickets.html" class="sidebar__item" data-page="tickets">
+            <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M3 4h10v8H3z"/><path d="M3 7h10"/></svg>
+            <span>Tickets</span>
+            <span class="sidebar__item-badge">12</span>
+          </a>
+        </div>
+
+        <!-- Ressources -->
+        <div class="sidebar__section">
+          <div class="sidebar__section-label">Ressources</div>
+          <a href="rh.html" class="sidebar__item" data-page="rh">
+            <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><circle cx="8" cy="5" r="3"/><path d="M2 14c0-2.21 2.69-4 6-4s6 1.79 6 4"/></svg>
+            <span>RH & Personnel</span>
+          </a>
+          <a href="projets.html" class="sidebar__item" data-page="projets">
+            <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M3 3h4v4H3zM9 3h4v4H9zM3 9h4v4H3zM9 9h4v4H9z"/></svg>
+            <span>Projets</span>
+          </a>
+          <a href="ged.html" class="sidebar__item" data-page="ged">
+            <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M2 4h3l2 2h7v7H2V4z"/></svg>
+            <span>GED</span>
+          </a>
+        </div>
+
+        <!-- Administration -->
+        <div class="sidebar__section">
+          <div class="sidebar__section-label">Administration</div>
+          <a href="workflows.html" class="sidebar__item" data-page="workflows">
+            <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M2 4h4v3H2zM10 4h4v3h-4zM6 5h4M2 10h4v3H2zM10 10h4v3h-4zM6 11h4"/></svg>
+            <span>Workflows</span>
+          </a>
+          <a href="admin.html" class="sidebar__item" data-page="admin">
+            <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M8 2a6 6 0 100 12A6 6 0 008 2z"/><path d="M8 5v3l2 2"/></svg>
+            <span>Administration</span>
+          </a>
+        </div>
+      </nav>
+
+      <!-- User info in footer -->
+      <div class="sidebar__footer">
+        <div class="sidebar__user">
+          <div class="sidebar__user-avatar">SL</div>
+          <div class="sidebar__user-info">
+            <div class="sidebar__user-name">Sophie Lemaire</div>
+            <div class="sidebar__user-role">Administratrice</div>
+          </div>
+        </div>
+      </div>
+    </aside>
+
+    <!-- --------------------------------------------------------
+         MAIN AREA
+         -------------------------------------------------------- -->
+    <div class="main">
+
+      <!-- Top bar -->
+      <header class="topbar" role="banner">
+
+        <!-- Breadcrumb -->
+        <nav class="topbar__breadcrumb" id="breadcrumb" aria-label="Fil d'Ariane">
+          <span class="topbar__breadcrumb-current">CRM</span>
+        </nav>
+
+        <!-- Search trigger (opens command palette) -->
+        <button class="topbar__search" id="searchTrigger" aria-label="Recherche globale (Ctrl+K)">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/>
+          </svg>
+          <span>Rechercher…</span>
+          <kbd>⌘K</kbd>
+        </button>
+
+        <!-- Notifications bell -->
+        <button class="topbar__bell" id="bellBtn" aria-label="Notifications (3 non lues)" hx-get="/api/notifications/" hx-trigger="click" hx-target="#notificationPanel">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 0 1-3.46 0"/>
+          </svg>
+          <span class="topbar__bell-dot"></span>
+        </button>
+
+        <!-- Avatar -->
+        <div class="topbar__avatar" data-tooltip="Marie Lefèvre">ML</div>
+
+      </header>
+
+      <!-- Content area -->
+      <main class="content" id="main-content" role="main">
+
+        <!-- ============================================================
+             KPI Row + Add Buttons
+             ============================================================ -->
+        <div class="kpi-row">
+          <div class="kpi kpi--active" data-tab="entreprises" role="button" tabindex="0" aria-label="KPI Entreprises, 147 résultats">
+            <div class="kpi__icon kpi__icon--indigo">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>
+            </div>
+            <div class="kpi__info">
+              <div class="kpi__label">Entreprises</div>
+              <div class="kpi__value" id="kpiEntreprises">147</div>
+            </div>
+          </div>
+
+          <div class="kpi" data-tab="etablissements" role="button" tabindex="0" aria-label="KPI Établissements, 234 résultats">
+            <div class="kpi__icon kpi__icon--blue">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="4" y="2" width="16" height="20" rx="2"/><line x1="9" y1="6" x2="9" y2="6.01"/><line x1="15" y1="6" x2="15" y2="6.01"/><line x1="9" y1="10" x2="9" y2="10.01"/><line x1="15" y1="10" x2="15" y2="10.01"/></svg>
+            </div>
+            <div class="kpi__info">
+              <div class="kpi__label">Établissements</div>
+              <div class="kpi__value" id="kpiEtablissements">234</div>
+            </div>
+          </div>
+
+          <div class="kpi" data-tab="contacts" role="button" tabindex="0" aria-label="KPI Contacts, 389 résultats">
+            <div class="kpi__icon kpi__icon--green">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/></svg>
+            </div>
+            <div class="kpi__info">
+              <div class="kpi__label">Contacts</div>
+              <div class="kpi__value" id="kpiContacts">389</div>
+            </div>
+          </div>
+
+          <div class="kpi-actions">
+            <button class="btn btn-secondary btn-xs" aria-label="Ajouter une entreprise">
+              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+              Entreprise
+            </button>
+            <button class="btn btn-secondary btn-xs" aria-label="Ajouter un établissement">
+              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+              Établissement
+            </button>
+            <button class="btn btn-primary btn-xs" id="addContactBtn" aria-label="Ajouter un contact">
+              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+              Contact
+            </button>
+          </div>
+        </div>
+
+        <!-- ============================================================
+             Search Bar + Filters
+             ============================================================ -->
+        <div class="search-bar" role="search">
+          <div class="search-bar__input-wrap">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+            <input class="search-bar__input" id="crmSearch" type="text" placeholder="Nom, SIREN, SIRET, email, téléphone…" aria-label="Recherche entreprises, établissements, contacts" hx-get="/api/crm/search/" hx-trigger="input changed delay:300ms" hx-target="#searchResults">
+          </div>
+
+          <div class="search-bar__sep"></div>
+
+          <div class="search-bar__filters">
+            <select class="select select-sm" id="filterType" aria-label="Filtrer par type">
+              <option value="">Type</option>
+              <option value="entreprise">Entreprise</option>
+              <option value="etablissement">Établissement</option>
+              <option value="contact">Contact</option>
+            </select>
+            <select class="select select-sm" id="filterMetier" aria-label="Filtrer par métier">
+              <option value="">Métier</option>
+              <option value="Architecte">Architecte</option>
+              <option value="Urbaniste">Urbaniste</option>
+              <option value="Paysagiste">Paysagiste</option>
+              <option value="BET TCE">BET TCE</option>
+              <option value="Autres BET">Autres BET</option>
+            </select>
+            <select class="select select-sm" id="filterStatut" aria-label="Filtrer par statut">
+              <option value="">Statut</option>
+              <option value="En activité">En activité</option>
+              <option value="Fermé">Fermé</option>
+            </select>
+            <select class="select select-sm" id="filterEtat" aria-label="Filtrer par état">
+              <option value="">État</option>
+              <option value="Abo">Abo</option>
+              <option value="Conversion">Conversion</option>
+              <option value="Prospect">Prospect</option>
+            </select>
+            <select class="select select-sm" id="filterCompte" aria-label="Filtrer par compte">
+              <option value="">Compte</option>
+              <option value="Client">Client</option>
+              <option value="Essai">Essai</option>
+              <option value="Test">Test</option>
+              <option value="Non-client">Non-client</option>
+            </select>
+
+            <span class="search-bar__filter-count" id="filterCount" aria-live="polite"></span>
+            <button class="search-bar__clear" id="clearFilters" aria-label="Effacer les filtres">Effacer</button>
+
+            <div class="search-bar__sep"></div>
+            <button class="search-bar__adv-btn" id="advSearchBtn" aria-label="Recherche avancée">⚙ Avancée</button>
+          </div>
+        </div>
+
+        <!-- ============================================================
+             Tabs
+             ============================================================ -->
+        <div class="tabs" role="tablist">
+          <button class="tabs__item tabs__item--active" role="tab" data-tab="entreprises" aria-selected="true">
+            Entreprises
+            <span class="tabs__count" id="tabCountEntreprises">147</span>
+          </button>
+          <button class="tabs__item" role="tab" data-tab="etablissements" aria-selected="false">
+            Établissements
+            <span class="tabs__count" id="tabCountEtablissements">234</span>
+          </button>
+          <button class="tabs__item" role="tab" data-tab="contacts" aria-selected="false">
+            Contacts
+            <span class="tabs__count" id="tabCountContacts">389</span>
+          </button>
+        </div>
+
+        <!-- ============================================================
+             Table: Entreprises
+             ============================================================ -->
+        <div class="tabs__panel tabs__panel--active" id="panel-entreprises" role="tabpanel" data-state="filled">
+          <div class="table-container">
+            <div class="table-container__toolbar">
+              <div class="table-container__toolbar-left">
+                <span id="entreprisesResultCount" aria-live="polite">147 entreprises</span>
+              </div>
+              <div class="table-container__toolbar-right">
+                <button class="btn btn-ghost btn-xs" aria-label="Exporter les entreprises">Export</button>
+              </div>
+            </div>
+            <div style="overflow-x: auto;">
+              <table class="table" id="tableEntreprises">
+                <th scope="col"ead>
+                  <tr>
+                    <th scope="col" class="sortable sorted sorted-asc" data-col="nom" style="width:28%">
+                      Nom <span class="table__sort-icon"></span>
+                    </th>
+                    <th scope="col" class="sortable" data-col="siren" style="width:14%">
+                      SIREN <span class="table__sort-icon"></span>
+                    </th>
+                    <th scope="col" class="sortable" data-col="metier" style="width:14%">
+                      Métier <span class="table__sort-icon"></span>
+                    </th>
+                    <th scope="col" class="sortable" data-col="nbEtab" style="width:9%">
+                      Étab. <span class="table__sort-icon"></span>
+                    </th>
+                    <th scope="col" class="sortable" data-col="nbContacts" style="width:10%">
+                      Contacts <span class="table__sort-icon"></span>
+                    </th>
+                    <th scope="col" class="sortable" data-col="etat" style="width:12%">
+                      État <span class="table__sort-icon"></span>
+                    </th>
+                    <th scope="col" class="sortable" data-col="compte" style="width:13%">
+                      Compte <span class="table__sort-icon"></span>
+                    </th>
+                  </tr>
+                </thead>
+                <tbody id="tbodyEntreprises" hx-get="/api/crm/entreprises/" hx-trigger="change" hx-target="this"></tbody>
+              </table>
+            </div>
+            <div class="pagination" id="paginationEntreprises" hx-get="/api/crm/entreprises/?page={page}" hx-trigger="click from:.pagination__btn" hx-target="#tbodyEntreprises" hx-swap="innerHTML"></div>
+          </div>
+        </div>
+
+        <!-- ============================================================
+             Table: Établissements
+             ============================================================ -->
+        <div class="tabs__panel" id="panel-etablissements" role="tabpanel" data-state="filled">
+          <div class="table-container">
+            <div class="table-container__toolbar">
+              <div class="table-container__toolbar-left">
+                <span id="etablissementsResultCount" aria-live="polite">234 établissements</span>
+              </div>
+              <div class="table-container__toolbar-right">
+                <button class="btn btn-ghost btn-xs" aria-label="Exporter les établissements">Export</button>
+              </div>
+            </div>
+            <div style="overflow-x: auto;">
+              <table class="table" id="tableEtablissements">
+                <th scope="col"ead>
+                  <tr>
+                    <th scope="col" class="sortable sorted sorted-asc" data-col="nom" style="width:22%">
+                      Nom <span class="table__sort-icon"></span>
+                    </th>
+                    <th scope="col" class="sortable" data-col="siret" style="width:14%">
+                      SIRET <span class="table__sort-icon"></span>
+                    </th>
+                    <th scope="col" class="sortable" data-col="type" style="width:9%">
+                      Type <span class="table__sort-icon"></span>
+                    </th>
+                    <th scope="col" class="sortable" data-col="statut" style="width:10%">
+                      Statut <span class="table__sort-icon"></span>
+                    </th>
+                    <th scope="col" class="sortable" data-col="compte" style="width:10%">
+                      Compte <span class="table__sort-icon"></span>
+                    </th>
+                    <th scope="col" class="sortable" data-col="abo" style="width:10%">
+                      Abo <span class="table__sort-icon"></span>
+                    </th>
+                    <th scope="col" class="sortable" data-col="etat" style="width:9%">
+                      État <span class="table__sort-icon"></span>
+                    </th>
+                    <th scope="col" style="width:10%">Dern. activité</th>
+                    <th scope="col" style="width:6%">Ville</th>
+                  </tr>
+                </thead>
+                <tbody id="tbodyEtablissements" hx-get="/api/crm/etablissements/" hx-trigger="change" hx-target="this"></tbody>
+              </table>
+            </div>
+            <div class="pagination" id="paginationEtablissements"></div>
+          </div>
+        </div>
+
+        <!-- ============================================================
+             Table: Contacts
+             ============================================================ -->
+        <div class="tabs__panel" id="panel-contacts" role="tabpanel" data-state="filled">
+          <div class="table-container">
+            <div class="table-container__toolbar">
+              <div class="table-container__toolbar-left">
+                <span id="contactsResultCount" aria-live="polite">389 contacts</span>
+              </div>
+              <div class="table-container__toolbar-right">
+                <button class="btn btn-ghost btn-xs" aria-label="Exporter les contacts">Export</button>
+              </div>
+            </div>
+            <div style="overflow-x: auto;">
+              <table class="table" id="tableContacts">
+                <th scope="col"ead>
+                  <tr>
+                    <th scope="col" class="sortable sorted sorted-asc" data-col="nom" style="width:18%">
+                      Nom <span class="table__sort-icon"></span>
+                    </th>
+                    <th scope="col" class="sortable" data-col="entreprise" style="width:18%">
+                      Entreprise <span class="table__sort-icon"></span>
+                    </th>
+                    <th scope="col" class="sortable" data-col="role" style="width:10%">
+                      Rôle <span class="table__sort-icon"></span>
+                    </th>
+                    <th scope="col" style="width:18%">Email</th>
+                    <th scope="col" style="width:12%">Téléphone</th>
+                    <th scope="col" class="sortable" data-col="score" style="width:8%">
+                      Score <span class="table__sort-icon"></span>
+                    </th>
+                    <th scope="col" style="width:8%">Santé</th>
+                    <th scope="col" style="width:8%">Tags</th>
+                  </tr>
+                </thead>
+                <tbody id="tbodyContacts" hx-get="/api/crm/contacts/" hx-trigger="change" hx-target="this" hx-post="/api/crm/contacts/" hx-target="#contactsList"></tbody>
+              </table>
+            </div>
+            <div class="pagination" id="paginationContacts"></div>
+          </div>
+        </div>
+
+      </main>
+
+    </div>
+
+  </div>
+
+  <!-- ============================================================
+       TOAST NOTIFICATION
+       ============================================================ -->
+  <div id="toast" class="toast" aria-live="polite" aria-atomic="true"></div>
+
+  <!-- ============================================================
+       SLIDE-OVER: Add Contact
+       ============================================================ -->
+  <div class="slideover-overlay" id="soAddContactOverlay"></div>
+  <div class="slideover" id="soAddContact">
+    <div class="slideover__header">
+      <span class="slideover__title">Ajouter un contact</span>
+      <button class="slideover__close" id="soAddContactClose" aria-label="Fermer le formulaire">✕</button>
+    </div>
+    <div class="slideover__body">
+      <div class="form-grid">
+        <div class="form__field">
+          <label class="form__label" for="crmNewCtPrenom">Prénom *</label>
+          <input class="form__input" type="text" id="crmNewCtPrenom" placeholder="Prénom" aria-required="true">
+        </div>
+        <div class="form__field">
+          <label class="form__label" for="crmNewCtNom">Nom *</label>
+          <input class="form__input" type="text" id="crmNewCtNom" placeholder="Nom" aria-required="true">
+        </div>
+        <div class="form__field form-grid--full">
+          <label class="form__label" for="crmNewCtEntreprise">Entreprise *</label>
+          <select class="form__select" id="crmNewCtEntreprise" aria-required="true">
+            <option value="">— Sélectionner —</option>
+            <option>Atelier Durand Architecture</option>
+            <option>Cabinet Moreau & Associés</option>
+            <option>BET Lefèvre Ingénierie</option>
+            <option>Paysages Urbains SARL</option>
+            <option>Studio Vidal Design</option>
+          </select>
+        </div>
+        <div class="form__field">
+          <label class="form__label" for="crmNewCtRole">Rôle</label>
+          <select class="form__select" id="crmNewCtRole">
+            <option>Dirigeant</option>
+            <option>Associé</option>
+            <option>Chef de projet</option>
+            <option>Architecte</option>
+            <option>Salarié</option>
+            <option>Autre</option>
+          </select>
+        </div>
+        <div class="form__field">
+          <label class="form__label" for="crmNewCtEtab">Établissement</label>
+          <select class="form__select" id="crmNewCtEtab">
+            <option value="">— Optionnel —</option>
+          </select>
+        </div>
+        <div class="form__field">
+          <label class="form__label" for="crmNewCtEmail">Email</label>
+          <input class="form__input" type="email" id="crmNewCtEmail" placeholder="prenom.nom@entreprise.fr">
+        </div>
+        <div class="form__field">
+          <label class="form__label" for="crmNewCtPhone">Téléphone</label>
+          <input class="form__input" type="tel" id="crmNewCtPhone" placeholder="01 23 45 67 89">
+        </div>
+      </div>
+    </div>
+    <div class="slideover__footer">
+      <button class="btn btn-secondary btn-sm" id="soAddContactCancel">Annuler</button>
+      <button class="btn btn-primary btn-sm" id="soAddContactSave" hx-post="/api/crm/contacts/" hx-target="#contactsList">Ajouter</button>
+    </div>
+  </div>
+
+  <!-- ============================================================
+       JAVASCRIPT — CRM Page Logic
+       ============================================================ -->
+  <script>
+    /* ========================================================
+       1. SIDEBAR TOGGLE
+       ======================================================== */
+    const sidebar = document.getElementById('sidebar');
+    const sidebarToggle = document.getElementById('sidebarToggle');
+
+    sidebarToggle.addEventListener('click', () => {
+      sidebar.classList.toggle('sidebar--collapsed');
+      const isCollapsed = sidebar.classList.contains('sidebar--collapsed');
+      sidebarToggle.setAttribute('aria-label', isCollapsed ? 'Étendre la barre latérale' : 'Réduire la barre latérale');
+    });
+
+    /* ========================================================
+       2. DATA: Fake data for CRM
+       ======================================================== */
+    const noms = ['Dupont', 'Martin', 'Bernard', 'Durand', 'Lefebvre', 'Moreau', 'Simon', 'Laurent', 'Garnier', 'Chevalier', 'Petit', 'David', 'Bertrand', 'Roux', 'Vincent', 'Fournier', 'Morel', 'Girard', 'André', 'Lefevre'];
+    const prenoms = ['Pierre', 'Sophie', 'Jean-Marc', 'Camille', 'Antoine', 'Isabelle', 'Laurent', 'Nathalie', 'Olivier', 'Frédéric', 'Sylvie', 'Nicolas', 'Carine', 'Bertrand', 'Martine', 'Cédric', 'Valérie', 'Alain', 'Christine', 'Thierry'];
+    const entreprises = ['Atelier Durand Architecture', 'Cabinet Moreau & Associés', 'BET Lefèvre Ingénierie', 'Urban Studio', 'Atelier Vert Paysage', 'BET Structure Plus', 'Archi Nova', 'Design & Concept', 'Cabinet Vidal'];
+    const metiers = ['Architecte', 'Urbaniste', 'Paysagiste', 'BET TCE', 'Autres BET'];
+    const roles = ['Dirigeant', 'Associé', 'Chef de projet', 'Architecte', 'Salarié', 'Autre'];
+    const villes = ['Paris', 'Lyon', 'Marseille', 'Toulouse', 'Nice', 'Nantes', 'Strasbourg', 'Montpellier', 'Bordeaux', 'Lille'];
+    const compteTypes = ['Client', 'Essai', 'Test', 'Non-client'];
+    const aboList = ['Abo', 'Conversion', 'Prospect'];
+    const crmEtats = ['Abo', 'Conversion', 'Prospect'];
+
+    const rand = (arr) => arr[Math.floor(Math.random() * arr.length)];
+    const randInt = (min, max) => Math.floor(Math.random() * (max - min + 1)) + min;
+
+    const genSiren = () => {
+      const parts = [];
+      for (let i = 0; i < 3; i++) parts.push(String(randInt(100, 999)));
+      return parts.join(' ');
+    };
+    const genSiret = (siren) => siren + ' ' + String(randInt(10000, 99999)).slice(0, 5);
+    const genPhone = () => {
+      const parts = [];
+      for (let i = 0; i < 4; i++) parts.push(String(randInt(10, 99)));
+      return parts.join(' ');
+    };
+    const genDate = (daysAgo) => {
+      const d = new Date();
+      d.setDate(d.getDate() - daysAgo);
+      return d.toLocaleDateString('fr-FR', { year: 'numeric', month: '2-digit', day: '2-digit' });
+    };
+
+    // Entreprises
+    const entreprises_data = [];
+    for (let i = 0; i < 30; i++) {
+      const nom = rand(entreprises) + (Math.random() > 0.5 ? ' SAS' : ' SARL');
+      const metier = rand(metiers);
+      const ville = rand(villes);
+      const siren = genSiren();
+      const nbEtab = randInt(1, 5);
+      const nbContacts = randInt(1, 8);
+      const etat = rand(['Abo', 'Conversion', 'Prospect']);
+      const compte = rand(compteTypes);
+      entreprises_data.push({ nom, siren, metier, ville, nbEtab, nbContacts, etat, compte, id: i });
+    }
+
+    // Établissements
+    const etablissements_data = [];
+    entreprises_data.forEach((ent) => {
+      for (let j = 0; j < ent.nbEtab; j++) {
+        const siret = genSiret(ent.siren);
+        const type = j === 0 ? 'Siège' : 'Secondaire';
+        const statut = Math.random() > 0.1 ? 'En activité' : 'Fermé';
+        const compte = rand(compteTypes);
+        const abo = rand(aboList);
+        const etat = rand(crmEtats);
+        const ville = j === 0 ? ent.ville : rand(villes);
+        const lastActivity = genDate(randInt(0, 60));
+        etablissements_data.push({ nom: ent.nom + (j > 0 ? ' — ' + ville : ''), siret, type, statut, compte, abo, etat, ville, lastActivity, entreprise: ent.nom, id: etablissements_data.length });
+      }
+    });
+
+    // Contacts
+    const contacts_data = [];
+    for (let i = 0; i < 40; i++) {
+      const prenom = rand(prenoms);
+      const nom = rand(noms);
+      const ent = entreprises_data[i % entreprises_data.length];
+      const role = rand(roles);
+      const email = prenom.toLowerCase().replace(/[éèê]/g, 'e').replace(/[àâ]/g, 'a') + '.' + nom.toLowerCase() + '@' + ent.nom.toLowerCase().replace(/[^a-z]/g, '').slice(0, 10) + '.fr';
+      const phone = genPhone();
+      const score = randInt(20, 98);
+      const sante = score > 70 ? 'green' : score > 45 ? 'orange' : 'red';
+      const tags = [];
+      if (Math.random() > 0.6) tags.push('VIP');
+      if (Math.random() > 0.7) tags.push('Décideur');
+      if (Math.random() > 0.8) tags.push('Churn risk');
+      contacts_data.push({ prenom, nom, fullName: prenom + ' ' + nom, entreprise: ent.nom, role, email, phone, score, sante, tags, id: i });
+    }
+
+    /* ========================================================
+       3. RENDER FUNCTIONS
+       ======================================================== */
+    const PAGE_SIZE = 15;
+
+    const pillHtml = (t) => {
+      const variants = {
+        'Performance': 'pill-info',
+        'Confort': 'pill-accent',
+        'Découverte': 'pill-success',
+        'Plancher': 'pill-default',
+        'Client': 'pill-success',
+        'Essai': 'pill-warning',
+        'Test': 'pill-default',
+        'Non-client': 'pill-default',
+        'Défini': 'pill-success',
+        'À définir': 'pill-warning',
+        'Fermé': 'pill-danger',
+        'Siège': 'pill-info',
+        'Secondaire': 'pill-default',
+        'En activité': 'pill-success',
+        'VIP': 'pill-accent',
+        'Décideur': 'pill-info',
+        'Churn risk': 'pill-danger',
+        'Abo': 'pill-success',
+        'Conversion': 'pill-warning',
+        'Prospect': 'pill-default'
+      };
+      return '<span class="pill ' + (variants[t] || 'pill-default') + '">' + t + '</span>';
+    };
+
+    const healthHtml = (c) => {
+      const labels = { green: 'Bon', orange: 'Attention', red: 'Critique', gray: 'Inactif' };
+      return '<span class="health-dot health-dot--' + c + '"></span>' + labels[c];
+    };
+
+    const renderEntreprises = (data, page) => {
+      page = page || 1;
+      const start = (page - 1) * PAGE_SIZE;
+      const slice = data.slice(start, start + PAGE_SIZE);
+      document.getElementById('tbodyEntreprises').innerHTML = slice.length
+        ? slice.map((e) => '<tr><td><strong style="font-weight:var(--weight-medium)">' + e.nom + '</strong></td><td class="text-mono text-muted">' + e.siren + '</td><td>' + pillHtml(e.metier) + '</td><td style="font-variant-numeric:tabular-nums">' + e.nbEtab + '</td><td style="font-variant-numeric:tabular-nums">' + e.nbContacts + '</td><td>' + pillHtml(e.etat) + '</td><td>' + pillHtml(e.compte) + '</td></tr>').join('')
+        : '<tr><td colspan="7"><div class="empty-state"><p>Aucune entreprise trouvée.</p></div></td></tr>';
+      document.getElementById('entreprisesResultCount').textContent = data.length + ' entreprise' + (data.length > 1 ? 's' : '');
+      renderPagination('paginationEntreprises', data.length, page, (p) => renderEntreprises(data, p));
+    };
+
+    const renderEtablissements = (data, page) => {
+      page = page || 1;
+      const start = (page - 1) * PAGE_SIZE;
+      const slice = data.slice(start, start + PAGE_SIZE);
+      document.getElementById('tbodyEtablissements').innerHTML = slice.length
+        ? slice.map((e) => '<tr><td><strong style="font-weight:var(--weight-medium)">' + e.nom + '</strong></td><td class="text-mono text-muted">' + e.siret + '</td><td>' + pillHtml(e.type) + '</td><td>' + pillHtml(e.statut) + '</td><td>' + pillHtml(e.compte) + '</td><td>' + pillHtml(e.abo) + '</td><td>' + pillHtml(e.etat) + '</td><td class="text-secondary">' + e.lastActivity + '</td><td class="text-secondary">' + e.ville + '</td></tr>').join('')
+        : '<tr><td colspan="9"><div class="empty-state"><p>Aucun établissement trouvé.</p></div></td></tr>';
+      document.getElementById('etablissementsResultCount').textContent = data.length + ' établissement' + (data.length > 1 ? 's' : '');
+      renderPagination('paginationEtablissements', data.length, page, (p) => renderEtablissements(data, p));
+    };
+
+    const renderContacts = (data, page) => {
+      page = page || 1;
+      const start = (page - 1) * PAGE_SIZE;
+      const slice = data.slice(start, start + PAGE_SIZE);
+      document.getElementById('tbodyContacts').innerHTML = slice.length
+        ? slice.map((c) => '<tr><td><div style="display:flex;align-items:center;gap:var(--sp-2)"><div style="width:28px;height:28px;border-radius:var(--radius-full);background:var(--gray-200);display:flex;align-items:center;justify-content:center;font-size:10px;font-weight:600;color:var(--text-secondary);flex-shrink:0">' + c.prenom[0] + c.nom[0] + '</div><strong style="font-weight:var(--weight-medium)">' + c.fullName + '</strong></div></td><td class="text-secondary">' + c.entreprise + '</td><td class="text-secondary">' + c.role + '</td><td class="text-secondary" style="max-width:180px;overflow:hidden;text-overflow:ellipsis">' + c.email + '</td><td class="text-mono text-muted" style="font-size:var(--text-xs)">' + c.phone + '</td><td><span style="font-variant-numeric:tabular-nums;font-weight:var(--weight-medium);color:' + (c.score > 70 ? 'var(--color-success)' : c.score > 45 ? 'var(--color-warning)' : 'var(--color-danger)') + '">' + c.score + '</span></td><td>' + healthHtml(c.sante) + '</td><td>' + c.tags.map((t) => pillHtml(t)).join(' ') + '</td></tr>').join('')
+        : '<tr><td colspan="8"><div class="empty-state"><p>Aucun contact trouvé.</p></div></td></tr>';
+      document.getElementById('contactsResultCount').textContent = data.length + ' contact' + (data.length > 1 ? 's' : '');
+      renderPagination('paginationContacts', data.length, page, (p) => renderContacts(data, p));
+    };
+
+    const renderPagination = (id, total, page, onPage) => {
+      const el = document.getElementById(id);
+      const totalPages = Math.ceil(total / PAGE_SIZE);
+      if (totalPages <= 1) {
+        el.innerHTML = '';
+        return;
+      }
+      const info = (page - 1) * PAGE_SIZE + 1 + '–' + Math.min(page * PAGE_SIZE, total) + ' sur ' + total;
+      const start = Math.max(1, page - 3);
+      const end = Math.min(totalPages, start + 6);
+      let pages = '';
+      for (let i = start; i <= end; i++) {
+        pages += '<button class="pagination__btn ' + (i === page ? 'pagination__btn--active' : '') + '" data-page="' + i + '">' + i + '</button>';
+      }
+      el.innerHTML = '<span class="pagination__info">' + info + '</span><div class="pagination__pages"><button class="pagination__btn" data-page="' + (page - 1) + '" ' + (page === 1 ? 'disabled' : '') + '>‹</button>' + pages + '<button class="pagination__btn" data-page="' + (page + 1) + '" ' + (page === totalPages ? 'disabled' : '') + '>›</button></div>';
+      el.querySelectorAll('.pagination__btn[data-page]').forEach((btn) => {
+        btn.addEventListener('click', () => {
+          const p = parseInt(btn.dataset.page);
+          if (p >= 1 && p <= totalPages) onPage(p);
+        });
+      });
+    };
+
+    /* ========================================================
+       4. TABS & KPI SWITCHING
+       ======================================================== */
+    const tabBtns = document.querySelectorAll('.tabs__item');
+    const panels = document.querySelectorAll('.tabs__panel');
+    const kpis = document.querySelectorAll('.kpi');
+
+    const switchTab = (tabName) => {
+      tabBtns.forEach((btn) => {
+        const isActive = btn.dataset.tab === tabName;
+        btn.classList.toggle('tabs__item--active', isActive);
+        btn.setAttribute('aria-selected', isActive);
+      });
+      panels.forEach((panel) => {
+        panel.classList.toggle('tabs__panel--active', panel.id === 'panel-' + tabName);
+      });
+      kpis.forEach((kpi) => {
+        kpi.classList.toggle('kpi--active', kpi.dataset.tab === tabName);
+      });
+    };
+
+    tabBtns.forEach((btn) => {
+      btn.addEventListener('click', () => switchTab(btn.dataset.tab));
+    });
+
+    kpis.forEach((kpi) => {
+      kpi.addEventListener('click', () => switchTab(kpi.dataset.tab));
+      kpi.addEventListener('keydown', (e) => {
+        if (e.key === 'Enter' || e.key === ' ') {
+          e.preventDefault();
+          switchTab(kpi.dataset.tab);
+        }
+      });
+    });
+
+    /* ========================================================
+       5. FILTERING & SEARCH
+       ======================================================== */
+    const searchInput = document.getElementById('crmSearch');
+    const filterSelects = ['filterType', 'filterMetier', 'filterStatut', 'filterEtat', 'filterCompte'].map((id) => document.getElementById(id));
+
+    const getFilters = () => ({
+      q: searchInput.value.toLowerCase().trim(),
+      type: document.getElementById('filterType').value,
+      metier: document.getElementById('filterMetier').value,
+      statut: document.getElementById('filterStatut').value,
+      etat: document.getElementById('filterEtat').value,
+      compte: document.getElementById('filterCompte').value
+    });
+
+    const countFilters = (f) => {
+      let c = 0;
+      if (f.q) c++;
+      if (f.type) c++;
+      if (f.metier) c++;
+      if (f.statut) c++;
+      if (f.etat) c++;
+      if (f.compte) c++;
+      return c;
+    };
+
+    const applyFilters = () => {
+      const f = getFilters();
+      const count = countFilters(f);
+
+      document.getElementById('filterCount').textContent = count + ' filtre' + (count > 1 ? 's' : '');
+      document.getElementById('filterCount').classList.toggle('search-bar__filter-count--visible', count > 0);
+      document.getElementById('clearFilters').classList.toggle('search-bar__clear--visible', count > 0);
+
+      if (f.type === 'entreprise') switchTab('entreprises');
+      else if (f.type === 'etablissement') switchTab('etablissements');
+      else if (f.type === 'contact') switchTab('contacts');
+
+      const fEntreprises = entreprises_data.filter((e) => {
+        if (f.q && e.nom.toLowerCase().indexOf(f.q) < 0 && e.siren.indexOf(f.q) < 0 && e.ville.toLowerCase().indexOf(f.q) < 0) return false;
+        if (f.metier && e.metier !== f.metier) return false;
+        if (f.etat && e.etat !== f.etat) return false;
+        if (f.compte && e.compte !== f.compte) return false;
+        return true;
+      });
+
+      const fEtablissements = etablissements_data.filter((e) => {
+        if (f.q && e.nom.toLowerCase().indexOf(f.q) < 0 && e.siret.replace(/ /g, '').indexOf(f.q.replace(/ /g, '')) < 0 && e.ville.toLowerCase().indexOf(f.q) < 0) return false;
+        if (f.statut && e.statut !== f.statut) return false;
+        if (f.etat && e.etat !== f.etat) return false;
+        if (f.compte && e.compte !== f.compte) return false;
+        return true;
+      });
+
+      const fContacts = contacts_data.filter((c) => {
+        if (f.q && c.fullName.toLowerCase().indexOf(f.q) < 0 && c.email.toLowerCase().indexOf(f.q) < 0 && c.entreprise.toLowerCase().indexOf(f.q) < 0 && c.phone.indexOf(f.q) < 0) return false;
+        return true;
+      });
+
+      document.getElementById('tabCountEntreprises').textContent = fEntreprises.length;
+      document.getElementById('tabCountEtablissements').textContent = fEtablissements.length;
+      document.getElementById('tabCountContacts').textContent = fContacts.length;
+      document.getElementById('kpiEntreprises').textContent = fEntreprises.length;
+      document.getElementById('kpiEtablissements').textContent = fEtablissements.length;
+      document.getElementById('kpiContacts').textContent = fContacts.length;
+
+      renderEntreprises(fEntreprises, 1);
+      renderEtablissements(fEtablissements, 1);
+      renderContacts(fContacts, 1);
+
+      window._fE = fEntreprises;
+      window._fEtab = fEtablissements;
+      window._fC = fContacts;
+    };
+
+    const debounce = (fn, ms) => {
+      let timeout;
+      return function (...args) {
+        clearTimeout(timeout);
+        timeout = setTimeout(() => fn.apply(this, args), ms);
+      };
+    };
+
+    searchInput.addEventListener('input', debounce(applyFilters, 200));
+    filterSelects.forEach((select) => {
+      select.addEventListener('change', applyFilters);
+    });
+
+    document.getElementById('clearFilters').addEventListener('click', () => {
+      searchInput.value = '';
+      filterSelects.forEach((select) => {
+        select.value = '';
+      });
+      applyFilters();
+    });
+
+    /* ========================================================
+       6. SORTING
+       ======================================================== */
+    document.querySelectorAll('.table th.sortable').forEach((th) => {
+      th.addEventListener('click', () => {
+        const table = th.closest('table');
+        const col = th.dataset.col;
+        const allTh = table.querySelectorAll('th.sortable');
+        const wasAsc = th.classList.contains('sorted-asc');
+
+        allTh.forEach((t) => {
+          t.classList.remove('sorted', 'sorted-asc', 'sorted-desc');
+        });
+
+        th.classList.add('sorted', wasAsc ? 'sorted-desc' : 'sorted-asc');
+
+        const dir = wasAsc ? -1 : 1;
+        let data, renderFn;
+
+        if (table.id === 'tableEntreprises') {
+          data = window._fE || entreprises_data;
+          renderFn = renderEntreprises;
+        } else if (table.id === 'tableEtablissements') {
+          data = window._fEtab || etablissements_data;
+          renderFn = renderEtablissements;
+        } else {
+          data = window._fC || contacts_data;
+          renderFn = renderContacts;
+        }
+
+        data.sort((a, b) => {
+          const va = a[col] || a.nom || a.fullName || '';
+          const vb = b[col] || b.nom || b.fullName || '';
+          if (typeof va === 'number') return (va - vb) * dir;
+          if (typeof va === 'string') return va.localeCompare(vb, 'fr') * dir;
+          return 0;
+        });
+
+        renderFn(data, 1);
+      });
+    });
+
+    /* ========================================================
+       7. TOAST NOTIFICATION
+       ======================================================== */
+    const showToast = (msg) => {
+      const toast = document.getElementById('toast');
+      toast.textContent = msg;
+      toast.classList.add('toast--active');
+      clearTimeout(toast._timeout);
+      toast._timeout = setTimeout(() => {
+        toast.classList.remove('toast--active');
+      }, 2400);
+    };
+    window.showToast = showToast;
+
+    /* ========================================================
+       8. SLIDE-OVER: ADD CONTACT
+       ======================================================== */
+    const soAddContact = document.getElementById('soAddContact');
+    const soAddContactOverlay = document.getElementById('soAddContactOverlay');
+    const addContactBtn = document.getElementById('addContactBtn');
+    const soAddContactClose = document.getElementById('soAddContactClose');
+    const soAddContactCancel = document.getElementById('soAddContactCancel');
+    const soAddContactSave = document.getElementById('soAddContactSave');
+
+    const etabByEntreprise = {
+      'Atelier Durand Architecture': ['Atelier Durand — Paris 8e', 'Atelier Durand — Lyon', 'Atelier Durand — Bordeaux'],
+      'Cabinet Moreau & Associés': ['Cabinet Moreau — Paris 15e', 'Cabinet Moreau — Nantes'],
+      'BET Lefèvre Ingénierie': ['BET Lefèvre — Marseille', 'BET Lefèvre — Toulouse'],
+      'Paysages Urbains SARL': ['Paysages Urbains — Rennes'],
+      'Studio Vidal Design': ['Studio Vidal — Paris 3e', 'Studio Vidal — Nice']
+    };
+
+    document.getElementById('crmNewCtEntreprise').addEventListener('change', function () {
+      const sel = document.getElementById('crmNewCtEtab');
+      sel.innerHTML = '<option value="">— Optionnel —</option>';
+      const etabs = etabByEntreprise[this.value] || [];
+      etabs.forEach((e) => {
+        const opt = document.createElement('option');
+        opt.textContent = e;
+        sel.appendChild(opt);
+      });
+    });
+
+    const openAddContact = () => {
+      soAddContact.classList.add('slideover--active');
+      soAddContactOverlay.classList.add('slideover-overlay--active');
+      ['crmNewCtPrenom', 'crmNewCtNom', 'crmNewCtEmail', 'crmNewCtPhone'].forEach((id) => {
+        document.getElementById(id).value = '';
+      });
+      document.getElementById('crmNewCtEntreprise').value = '';
+      document.getElementById('crmNewCtRole').selectedIndex = 0;
+      document.getElementById('crmNewCtEtab').innerHTML = '<option value="">— Optionnel —</option>';
+    };
+
+    const closeAddContact = () => {
+      soAddContact.classList.remove('slideover--active');
+      soAddContactOverlay.classList.remove('slideover-overlay--active');
+    };
+
+    addContactBtn.addEventListener('click', openAddContact);
+    soAddContactClose.addEventListener('click', closeAddContact);
+    soAddContactCancel.addEventListener('click', closeAddContact);
+    soAddContactOverlay.addEventListener('click', closeAddContact);
+
+    soAddContactSave.addEventListener('click', () => {
+      const prenom = document.getElementById('crmNewCtPrenom').value.trim();
+      const nom = document.getElementById('crmNewCtNom').value.trim();
+      const entreprise = document.getElementById('crmNewCtEntreprise').value;
+
+      if (!prenom || !nom) {
+        showToast('Remplir prénom et nom');
+        return;
+      }
+      if (!entreprise) {
+        showToast('Sélectionner une entreprise');
+        return;
+      }
+
+      const role = document.getElementById('crmNewCtRole').value;
+      const email = document.getElementById('crmNewCtEmail').value.trim();
+      const phone = document.getElementById('crmNewCtPhone').value.trim();
+      const etab = document.getElementById('crmNewCtEtab').value;
+      const fullName = prenom + ' ' + nom;
+      const sante = rand(['green', 'orange', 'red']);
+      const score = randInt(20, 95);
+      const tags = [rand(['Réabo', 'Actif', 'VIP', 'Multi-sites', 'Nouveau'])];
+
+      const newContact = {
+        prenom: prenom,
+        nom: nom,
+        fullName: fullName,
+        entreprise: entreprise,
+        role: role,
+        email: email || fullName.toLowerCase().replace(/ /g, '.') + '@mail.fr',
+        phone: phone || '01 ' + randInt(10, 99) + ' ' + randInt(10, 99) + ' ' + randInt(10, 99) + ' ' + randInt(10, 99),
+        score: score,
+        sante: sante,
+        tags: tags
+      };
+
+      contacts_data.unshift(newContact);
+      applyFilters();
+      closeAddContact();
+      showToast(fullName + ' ajouté au CRM');
+
+      // Switch to Contacts tab
+      switchTab('contacts');
+    });
+
+    document.addEventListener('keydown', (e) => {
+      if (e.key === 'Escape' && soAddContact.classList.contains('slideover--active')) {
+        closeAddContact();
+      }
+    });
+
+    /* ========================================================
+       9. INITIALIZE
+       ======================================================== */
+    window._fE = entreprises_data;
+    window._fEtab = etablissements_data;
+    window._fC = contacts_data;
+
+    renderEntreprises(entreprises_data, 1);
+    renderEtablissements(etablissements_data, 1);
+    renderContacts(contacts_data, 1);
+  </script>
+
+</body>
+</html>

@@ -1,0 +1,839 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>CRM SaaS — Comptabilité Commerciale</title>
+  <link rel="stylesheet" href="design-system.css">
+  <style>
+    /* ============================================================
+       Shell overrides (consistent with design-system.css v2)
+       ============================================================ */
+    .sidebar__item--active { color: var(--text-inverse); background: var(--accent-600); }
+
+    /* ============================================================
+       Module Comptabilité Commerciale — Layout
+       ============================================================ */
+    .compta-fac__container { padding: 0; display: flex; flex-direction: column; height: calc(100vh - 46px); overflow: hidden; }
+
+    /* ============================================================
+       TABS — Synthèse / Réabonnements / Facturation
+       ============================================================ */
+    .tabs { display: flex; gap: 0; border-bottom: 1px solid var(--border-subtle); padding: 0 var(--sp-5); flex-shrink: 0; background: var(--bg-surface); }
+    .tabs__item { padding: var(--sp-2-5) var(--sp-4); font-size: var(--text-sm); font-weight: 500; color: var(--text-tertiary); border-bottom: 2px solid transparent; cursor: pointer; transition: all var(--duration-fast) var(--ease-in-out); white-space: nowrap; display: flex; align-items: center; gap: var(--sp-1-5); }
+    .tabs__item:hover { color: var(--text-primary); }
+    .tabs__item.active { color: var(--accent-600); border-bottom-color: var(--accent-600); }
+    .tabs__badge { font-size: 10px; font-weight: 600; padding: 1px 6px; border-radius: var(--radius-full); background: var(--gray-100); color: var(--text-secondary); }
+    .tabs__item.active .tabs__badge { background: var(--accent-50); color: var(--accent-600); }
+    .tabs__panel { display: none; flex: 1; overflow-y: auto; flex-direction: column; }
+    .tabs__panel.active { display: flex; }
+
+    /* ============================================================
+       SYNTHÈSE — Dashboard comptable
+       ============================================================ */
+
+    /* --- Period selector bar --- */
+    .synth__toolbar { display: flex; align-items: center; justify-content: space-between; padding: var(--sp-3) var(--sp-5); border-bottom: 1px solid var(--border-subtle); flex-shrink: 0; background: var(--bg-surface); }
+    .synth__toolbar-left { display: flex; align-items: center; gap: var(--sp-2); }
+    .synth__toolbar-right { display: flex; align-items: center; gap: var(--sp-2); }
+    .synth__period-group { display: flex; gap: 0; background: var(--bg-app); border: 1px solid var(--border-subtle); border-radius: var(--radius-md); padding: 2px; }
+    .synth__period-btn { padding: var(--sp-1) var(--sp-3); font-size: var(--text-xs); font-weight: 500; border: none; background: none; border-radius: var(--radius-sm); color: var(--text-tertiary); cursor: pointer; transition: all var(--duration-fast); }
+    .synth__period-btn:hover { color: var(--text-primary); }
+    .synth__period-btn.active { background: var(--bg-surface); color: var(--text-primary); box-shadow: var(--shadow-xs); }
+    .synth__date-range { display: none; align-items: center; gap: var(--sp-1-5); }
+    .synth__date-range.active { display: flex; }
+    .synth__date-input { padding: var(--sp-1) var(--sp-2); font-size: var(--text-xs); font-family: var(--font-mono); border: 1px solid var(--border-default); border-radius: var(--radius-md); background: var(--bg-surface); width: 120px; }
+    .synth__date-sep { font-size: var(--text-xs); color: var(--text-muted); }
+
+    /* KPIs row */
+    .synth__kpis { display: grid; grid-template-columns: repeat(5, 1fr); gap: var(--sp-3); padding: var(--sp-4) var(--sp-5); flex-shrink: 0; }
+    .synth__kpi { background: var(--bg-surface); border: 1px solid var(--border-subtle); border-radius: var(--radius-lg); padding: var(--sp-4); }
+    .synth__kpi--loading { opacity: 0.6; pointer-events: none; }
+    .synth__kpi-label { font-size: var(--text-xs); color: var(--text-tertiary); margin-bottom: var(--sp-1); display: flex; align-items: center; gap: var(--sp-1-5); }
+    .synth__kpi-label svg { width: 14px; height: 14px; }
+    .synth__kpi-value { font-size: var(--text-xl); font-weight: 700; color: var(--text-primary); font-variant-numeric: tabular-nums; }
+    .synth__kpi-sub { font-size: var(--text-xs); color: var(--text-muted); margin-top: var(--sp-1); font-variant-numeric: tabular-nums; }
+    .synth__kpi-trend { display: inline-flex; align-items: center; gap: 2px; font-size: var(--text-xs); font-weight: 600; padding: 1px 5px; border-radius: var(--radius-sm); }
+    .synth__kpi-trend.up { color: #16a34a; background: #f0fdf4; }
+    .synth__kpi-trend.down { color: var(--color-danger); background: var(--color-danger-subtle); }
+
+    /* Charts row */
+    .synth__charts { display: grid; grid-template-columns: 1fr 1fr; gap: var(--sp-3); padding: 0 var(--sp-5) var(--sp-3); flex-shrink: 0; }
+    .synth__chart-card { background: var(--bg-surface); border: 1px solid var(--border-subtle); border-radius: var(--radius-lg); padding: var(--sp-4); }
+    .synth__chart-title { font-size: var(--text-sm); font-weight: 600; color: var(--text-primary); margin-bottom: var(--sp-3); }
+    .synth__chart { display: flex; align-items: flex-end; gap: var(--sp-2); height: 200px; padding-top: var(--sp-2); }
+    .synth__chart-group { flex: 1; display: flex; flex-direction: column; align-items: center; gap: var(--sp-1); }
+    .synth__chart-bar-pair { display: flex; gap: 3px; align-items: flex-end; height: 170px; width: 100%; }
+    .synth__chart-bar { flex: 1; border-radius: 3px 3px 0 0; min-height: 4px; transition: height .4s ease; }
+    .synth__chart-bar.facture { background: var(--accent-500); }
+    .synth__chart-bar.encaisse { background: var(--accent-200); }
+    .synth__chart-label { font-size: 10px; color: var(--text-muted); }
+    .synth__legend { display: flex; gap: var(--sp-4); margin-top: var(--sp-3); }
+    .synth__legend-item { display: flex; align-items: center; gap: var(--sp-1-5); font-size: var(--text-xs); color: var(--text-secondary); }
+    .synth__legend-dot { width: 8px; height: 8px; border-radius: 2px; flex-shrink: 0; }
+
+    /* Bottom row: Aging + Top debtors */
+    .synth__bottom { display: grid; grid-template-columns: 1fr 1fr; gap: var(--sp-3); padding: 0 var(--sp-5) var(--sp-4); }
+    .synth__card { background: var(--bg-surface); border: 1px solid var(--border-subtle); border-radius: var(--radius-lg); padding: var(--sp-4); }
+    .synth__card-title { font-size: var(--text-sm); font-weight: 600; color: var(--text-primary); margin-bottom: var(--sp-3); display: flex; align-items: center; gap: var(--sp-2); }
+    .synth__table { width: 100%; border-collapse: collapse; }
+    .synth__table th { font-size: 10px; font-weight: 600; text-transform: uppercase; letter-spacing: .04em; color: var(--text-muted); text-align: left; padding: var(--sp-1-5) var(--sp-2); border-bottom: 1px solid var(--border-subtle); }
+    .synth__table th:last-child, .synth__table td:last-child { text-align: right; }
+    .synth__table td { font-size: var(--text-xs); padding: var(--sp-2); border-bottom: 1px solid var(--border-subtle); color: var(--text-secondary); }
+    .synth__table tr:last-child td { border-bottom: none; font-weight: 600; color: var(--text-primary); }
+    .synth__table .u-tabular-nums { font-family: var(--font-mono); font-variant-numeric: tabular-nums; }
+
+    /* ============================================================
+       RÉABONNEMENTS
+       ============================================================ */
+
+    /* Toolbar */
+    .reabo__toolbar { display: flex; align-items: center; justify-content: space-between; padding: var(--sp-3) var(--sp-5); border-bottom: 1px solid var(--border-subtle); flex-shrink: 0; background: var(--bg-surface); }
+    .reabo__toolbar-left { display: flex; align-items: center; gap: var(--sp-3); }
+    .reabo__toolbar-right { display: flex; align-items: center; gap: var(--sp-2); }
+    .reabo__campaign-select { padding: var(--sp-1-5) var(--sp-3); font-size: var(--text-sm); font-weight: 600; border: 1px solid var(--border-default); border-radius: var(--radius-md); background: var(--bg-surface); color: var(--text-primary); cursor: pointer; }
+
+    /* KPIs */
+    .reabo__kpis { display: grid; grid-template-columns: repeat(5, 1fr); gap: var(--sp-3); padding: var(--sp-3) var(--sp-5); flex-shrink: 0; }
+    .reabo__kpi { background: var(--bg-surface); border: 1px solid var(--border-subtle); border-radius: var(--radius-lg); padding: var(--sp-3); text-align: center; }
+    .reabo__kpi-value { font-size: var(--text-xl); font-weight: 700; color: var(--text-primary); }
+    .reabo__kpi-label { font-size: var(--text-xs); color: var(--text-tertiary); margin-top: var(--sp-0-5); }
+
+    /* Filters */
+    .reabo__filters { display: flex; align-items: center; gap: var(--sp-2); padding: var(--sp-2) var(--sp-5); border-bottom: 1px solid var(--border-subtle); flex-shrink: 0; background: var(--bg-surface); }
+    .reabo__search-wrap { position: relative; display: flex; align-items: center; }
+    .reabo__search-wrap svg { position: absolute; left: 8px; color: var(--text-muted); pointer-events: none; width: 14px; height: 14px; }
+    .reabo__search { padding: var(--sp-1-5) var(--sp-2-5) var(--sp-1-5) 28px; font-size: var(--text-xs); border: 1px solid var(--border-default); border-radius: var(--radius-md); background: var(--bg-surface); width: 220px; }
+    .reabo__search:focus { border-color: var(--accent-500); box-shadow: 0 0 0 2px rgba(59,130,246,.15); }
+    .reabo__filter { padding: var(--sp-1-5) var(--sp-2-5); font-size: var(--text-xs); border: 1px solid var(--border-default); border-radius: var(--radius-md); background: var(--bg-surface); color: var(--text-secondary); cursor: pointer; }
+
+    /* Table */
+    .reabo__table-wrap { flex: 1; overflow-y: auto; padding: 0; }
+    .reabo__table { width: 100%; border-collapse: collapse; }
+    .reabo__table thead { position: sticky; top: 0; z-index: 10; background: var(--bg-surface); }
+    .reabo__table th { font-size: 10px; font-weight: 600; text-transform: uppercase; letter-spacing: .04em; color: var(--text-muted); text-align: left; padding: var(--sp-2) var(--sp-3); border-bottom: 1px solid var(--border-subtle); white-space: nowrap; cursor: pointer; user-select: none; }
+    .reabo__table th:hover { color: var(--text-primary); }
+    .reabo__table td { font-size: var(--text-xs); padding: var(--sp-2) var(--sp-3); border-bottom: 1px solid var(--border-subtle); color: var(--text-secondary); vertical-align: middle; }
+    .reabo__table tr:hover td { background: var(--bg-hover); }
+    .reabo__table tr.selected td { background: var(--accent-50); }
+    .reabo__table .u-tabular-nums { font-family: var(--font-mono); font-variant-numeric: tabular-nums; }
+
+    /* Slide-over */
+    .reabo__overlay { display: none; position: fixed; inset: 0; background: rgba(0,0,0,.3); z-index: var(--z-overlay); }
+    .reabo__overlay.active { display: block; }
+    .reabo__panel { position: fixed; top: 0; right: -520px; width: 520px; height: 100vh; background: var(--bg-surface); box-shadow: var(--shadow-xl); z-index: var(--z-modal); transition: right var(--duration-slow) var(--ease-out); display: flex; flex-direction: column; }
+    .reabo__panel.active { right: 0; }
+    .reabo__panel-header { padding: var(--sp-4) var(--sp-5); border-bottom: 1px solid var(--border-subtle); display: flex; align-items: flex-start; justify-content: space-between; flex-shrink: 0; }
+    .reabo__panel-title { font-size: var(--text-md); font-weight: 600; color: var(--text-primary); }
+    .reabo__panel-subtitle { font-size: var(--text-xs); color: var(--text-tertiary); margin-top: 2px; }
+    .reabo__panel-close { width: 28px; height: 28px; display: flex; align-items: center; justify-content: center; border-radius: var(--radius-md); color: var(--text-muted); cursor: pointer; transition: all var(--duration-fast); }
+    .reabo__panel-close:hover { background: var(--bg-hover); color: var(--text-primary); }
+    .reabo__panel-body { flex: 1; overflow-y: auto; padding: var(--sp-4) var(--sp-5); display: flex; flex-direction: column; gap: var(--sp-5); }
+
+    /* ============================================================
+       FACTURATION
+       ============================================================ */
+
+    /* Sub-tabs */
+    .facture__subtabs { display: flex; gap: 0; padding: 0 var(--sp-5); border-bottom: 1px solid var(--border-subtle); background: var(--bg-muted); flex-shrink: 0; }
+    .facture__subtab { padding: var(--sp-2) var(--sp-3); font-size: var(--text-xs); font-weight: 500; color: var(--text-tertiary); border-bottom: 2px solid transparent; cursor: pointer; transition: all var(--duration-fast); display: flex; align-items: center; gap: var(--sp-1); }
+    .facture__subtab:hover { color: var(--text-primary); }
+    .facture__subtab.active { color: var(--accent-600); border-bottom-color: var(--accent-600); }
+    .facture__subpanel { display: none; flex: 1; flex-direction: column; overflow: hidden; }
+    .facture__subpanel.active { display: flex; }
+
+    /* Toolbar */
+    .facture__toolbar { display: flex; align-items: center; justify-content: space-between; padding: var(--sp-2-5) var(--sp-5); border-bottom: 1px solid var(--border-subtle); flex-shrink: 0; background: var(--bg-surface); }
+    .facture__toolbar-left { display: flex; align-items: center; gap: var(--sp-2); flex-wrap: wrap; }
+    .facture__toolbar-right { display: flex; align-items: center; gap: var(--sp-2); }
+    .facture__filter { padding: var(--sp-1-5) var(--sp-2-5); font-size: var(--text-xs); border: 1px solid var(--border-default); border-radius: var(--radius-md); background: var(--bg-surface); color: var(--text-secondary); cursor: pointer; }
+    .facture__filter:focus { border-color: var(--accent-500); }
+    .facture__search-wrap { position: relative; display: flex; align-items: center; }
+    .facture__search-wrap svg { position: absolute; left: 8px; color: var(--text-muted); pointer-events: none; width: 14px; height: 14px; }
+    .facture__search { padding: var(--sp-1-5) var(--sp-2-5) var(--sp-1-5) 28px; font-size: var(--text-xs); border: 1px solid var(--border-default); border-radius: var(--radius-md); background: var(--bg-surface); width: 200px; }
+    .facture__search:focus { border-color: var(--accent-500); box-shadow: 0 0 0 2px rgba(59,130,246,.15); }
+
+    /* Table */
+    .facture__table-wrap { flex: 1; overflow-y: auto; }
+    .facture__table { width: 100%; border-collapse: collapse; }
+    .facture__table thead { position: sticky; top: 0; z-index: 10; background: var(--bg-surface); }
+    .facture__table th { font-size: 10px; font-weight: 600; text-transform: uppercase; letter-spacing: .04em; color: var(--text-muted); text-align: left; padding: var(--sp-2) var(--sp-3); border-bottom: 1px solid var(--border-subtle); white-space: nowrap; cursor: pointer; user-select: none; }
+    .facture__table th:hover { color: var(--text-primary); }
+    .facture__table td { font-size: var(--text-xs); padding: var(--sp-2) var(--sp-3); border-bottom: 1px solid var(--border-subtle); color: var(--text-secondary); vertical-align: middle; }
+    .facture__table tr:hover td { background: var(--bg-hover); }
+    .facture__table tr { cursor: pointer; }
+    .facture__table .u-tabular-nums { font-family: var(--font-mono); font-variant-numeric: tabular-nums; }
+
+    /* State pills */
+    .pill { display: inline-flex; align-items: center; gap: 4px; padding: 2px 8px; border-radius: var(--radius-full); font-size: 10px; font-weight: 600; white-space: nowrap; }
+    .pill--emise { background: var(--accent-50); color: var(--accent-700); }
+    .pill--envoyee { background: #eff6ff; color: #1e40af; }
+    .pill--payee { background: #f0fdf4; color: #16a34a; }
+    .pill--partielle { background: #fffbeb; color: #d97706; }
+    .pill--retard { background: #fef2f2; color: #dc2626; font-weight: 700; }
+
+    /* ============================================================
+       SHARED
+       ============================================================ */
+    .u-text-center { text-align: center; }
+    .u-text-right { text-align: right; }
+    .u-flex { display: flex; }
+    .u-items-center { align-items: center; }
+    .u-gap-2 { gap: var(--sp-2); }
+    .u-gap-3 { gap: var(--sp-3); }
+
+    /* Empty state */
+    .empty-state { padding: var(--sp-8); text-align: center; color: var(--text-muted); font-size: var(--text-sm); }
+    .empty-state svg { width: 48px; height: 48px; margin: 0 auto var(--sp-4); opacity: 0.5; }
+
+    /* Loading skeleton */
+    .skeleton { background: linear-gradient(90deg, var(--gray-100) 25%, var(--gray-150) 50%, var(--gray-100) 75%); background-size: 200% 100%; animation: shimmer 1.5s infinite; }
+    @keyframes shimmer { 0% { background-position: 200% 0; } 100% { background-position: -200% 0; } }
+    .skeleton-bar { height: 20px; border-radius: var(--radius-md); margin-bottom: var(--sp-2); }
+  </style>
+</head>
+<body>
+
+  <!-- Skip-to-content link for accessibility -->
+  <a href="#main-content" class="skip-link">Aller au contenu</a>
+
+  <!-- ============================================================
+       APP SHELL (adapted from shell.html v2)
+       ============================================================ -->
+  <div class="app">
+
+    <!-- SIDEBAR -->
+    <aside class="sidebar" id="sidebar" role="navigation" aria-label="Navigation principale">
+      <div class="sidebar__header">
+        <div class="sidebar__logo">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width:20px;height:20px"><rect x="3" y="3" width="7" height="7" rx="2"/><rect x="14" y="3" width="7" height="7" rx="2"/><rect x="3" y="14" width="7" height="7" rx="2"/><circle cx="17.5" cy="17.5" r="3.5"/></svg>
+          <span>CRM SaaS</span>
+        </div>
+        <button class="sidebar__toggle" id="sidebarToggle" aria-label="Réduire la sidebar">
+          <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" style="width:16px;height:16px"><path d="M10 3L5 8l5 5"/></svg>
+        </button>
+      </div>
+
+      <nav class="sidebar__nav">
+        <div class="sidebar__section">
+          <div class="sidebar__section-label">Opérations</div>
+          <a href="compta-facturation.html" class="sidebar__item sidebar__item--active" data-page="compta-facturation">
+            <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M4 2v12h8V2H4z"/><path d="M7 5h2M6 8h4M6 11h4"/></svg>
+            <span>Comptabilité commerciale</span>
+          </a>
+        </div>
+      </nav>
+
+      <div class="sidebar__footer">
+        <div class="sidebar__user">
+          <div class="sidebar__user-avatar">SL</div>
+          <div class="sidebar__user-info">
+            <div class="sidebar__user-name">Sophie Lemaire</div>
+            <div class="sidebar__user-role">Administratrice</div>
+          </div>
+        </div>
+      </div>
+    </aside>
+
+    <!-- MAIN AREA -->
+    <div class="main">
+
+      <!-- TOPBAR -->
+      <header class="topbar" role="banner">
+        <nav class="topbar__breadcrumb" aria-label="Fil d'Ariane">
+          <span class="topbar__breadcrumb-current">Comptabilité Commerciale</span>
+        </nav>
+        <div style="display:flex;align-items:center;gap:var(--sp-2)">
+          <button class="topbar__bell" aria-label="Notifications">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 0 1-3.46 0"/>
+            </svg>
+            <span class="topbar__bell-dot"></span>
+          </button>
+        </div>
+      </header>
+
+      <!-- CONTENT -->
+      <main class="content compta-fac__container" id="main-content">
+
+        <!-- === MAIN TABS === -->
+        <div class="tabs" role="tablist" aria-label="Sous-modules comptabilité">
+          <button class="tabs__item active" role="tab" aria-selected="true" data-tab="synthese" id="tab-synthese" aria-controls="panel-synthese">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/></svg>
+            Synthèse
+          </button>
+          <button class="tabs__item" role="tab" aria-selected="false" data-tab="reabonnements" id="tab-reabonnements" aria-controls="panel-reabonnements">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12V7H5a2 2 0 0 1 0-4h14v4"/><path d="M3 5v14a2 2 0 0 0 2 2h16v-5"/><path d="M18 12a2 2 0 1 0 4 0 2 2 0 0 0-4 0Z"/></svg>
+            Réabonnements
+            <span class="tabs__badge">142</span>
+          </button>
+          <button class="tabs__item" role="tab" aria-selected="false" data-tab="facturation" id="tab-facturation" aria-controls="panel-facturation">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14.5 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7.5L14.5 2z"/><polyline points="14,2 14,8 20,8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/><line x1="10" y1="9" x2="8" y2="9"/></svg>
+            Facturation
+            <span class="tabs__badge">47</span>
+          </button>
+        </div>
+
+        <!-- ============================================================
+             PANEL: SYNTHÈSE
+             ============================================================ -->
+        <!-- ====== SECTION : Synthèse ====== -->
+        <div class="tabs__panel active" id="panel-synthese" role="tabpanel" aria-labelledby="tab-synthese">
+
+          <!-- Period selector -->
+          <div class="synth__toolbar">
+            <div class="synth__toolbar-left">
+              <div class="synth__period-group" role="group" aria-label="Sélection période">
+                <button class="synth__period-btn" data-period="month" hx-get="/api/compta/synthese/?period=month">Mois</button>
+                <button class="synth__period-btn active" data-period="quarter" hx-get="/api/compta/synthese/?period=quarter">Trimestre</button>
+                <button class="synth__period-btn" data-period="year" hx-get="/api/compta/synthese/?period=year">Année</button>
+                <button class="synth__period-btn" data-period="custom">Personnalisé</button>
+              </div>
+              <div class="synth__date-range" id="customDateRange" aria-label="Période personnalisée">
+                <input type="date" class="synth__date-input" id="dateStart" value="2026-01-01" aria-label="Date début">
+                <span class="synth__date-sep">→</span>
+                <input type="date" class="synth__date-input" id="dateEnd" value="2026-03-31" aria-label="Date fin">
+              </div>
+            </div>
+            <div class="synth__toolbar-right">
+              <button class="btn btn--secondary" hx-get="/api/compta/synthese/export/" aria-label="Exporter la synthèse">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7,10 12,15 17,10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+                Export CSV
+              </button>
+            </div>
+          </div>
+
+          <!-- KPI Cards -->
+          <div class="synth__kpis">
+            <!-- CA facturé -->
+            <div class="synth__kpi">
+              <div class="synth__kpi-label">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="1" x2="12" y2="23"/><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg>
+                CA facturé (T1 2026)
+              </div>
+              <div class="synth__kpi-value">284 750 €</div>
+              <div class="synth__kpi-sub"><span class="synth__kpi-trend up">↑ +8,3 %</span> vs T4 2025</div>
+            </div>
+            <!-- CA encaissé -->
+            <div class="synth__kpi">
+              <div class="synth__kpi-label">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="22,12 18,12 15,21 9,3 6,12 2,12"/></svg>
+                CA encaissé
+              </div>
+              <div class="synth__kpi-value">256 280 €</div>
+              <div class="synth__kpi-sub"><span class="synth__kpi-trend up">↑ +12,1 %</span> vs T4 2025</div>
+            </div>
+            <!-- Créances -->
+            <div class="synth__kpi">
+              <div class="synth__kpi-label">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+                Créances en cours
+              </div>
+              <div class="synth__kpi-value">28 470 €</div>
+              <div class="synth__kpi-sub">14 factures non soldées</div>
+            </div>
+            <!-- Taux d'encaissement -->
+            <div class="synth__kpi">
+              <div class="synth__kpi-label">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22,4 12,14.01 9,11.01"/></svg>
+                Taux d'encaissement
+              </div>
+              <div class="synth__kpi-value" style="color: #16a34a;">90,0 %</div>
+              <div class="synth__kpi-sub"><span class="synth__kpi-trend up">↑ +2,4 pts</span> vs T4 2025</div>
+            </div>
+            <!-- Factures émises -->
+            <div class="synth__kpi">
+              <div class="synth__kpi-label">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14.5 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7.5L14.5 2z"/><polyline points="14,2 14,8 20,8"/></svg>
+                Factures émises
+              </div>
+              <div class="synth__kpi-value">47</div>
+              <div class="synth__kpi-sub"><span class="synth__kpi-trend up">↑ +6</span> vs T4 2025</div>
+            </div>
+          </div>
+
+          <!-- Charts row -->
+          <div class="synth__charts">
+
+            <!-- Bar chart: CA facturé vs encaissé -->
+            <div class="synth__chart-card">
+              <div class="synth__chart-title">Évolution CA facturé vs encaissé (12 mois glissants)</div>
+              <div class="synth__chart" id="barChart" aria-label="Graphique barres CA"></div>
+              <div class="synth__legend">
+                <div class="synth__legend-item"><div class="synth__legend-dot" style="background:var(--accent-500)"></div>CA facturé</div>
+                <div class="synth__legend-item"><div class="synth__legend-dot" style="background:var(--accent-200)"></div>CA encaissé</div>
+              </div>
+            </div>
+
+            <!-- Donut: répartition par plan -->
+            <div class="synth__chart-card">
+              <div class="synth__chart-title">Répartition du CA par plan d'abonnement</div>
+              <div style="display:flex;gap:var(--sp-6);align-items:center">
+                <div style="position:relative;width:160px;height:160px;flex-shrink:0">
+                  <svg viewBox="0 0 36 36" id="donutPlan" style="width:100%;height:100%;transform:rotate(-90deg)">
+                    <circle cx="18" cy="18" r="14" fill="none" stroke="var(--gray-100)" stroke-width="4"/>
+                  </svg>
+                  <div style="position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);text-align:center">
+                    <div style="font-size:var(--text-lg);font-weight:700;color:var(--text-primary)">284,8k</div>
+                    <div style="font-size:10px;color:var(--text-muted)">Total HT</div>
+                  </div>
+                </div>
+                <div id="donutPlanLegend" style="display:flex;flex-direction:column;gap:var(--sp-2);flex:1"></div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Bottom row: Aging + Top debtors -->
+          <div class="synth__bottom">
+
+            <!-- Aging table -->
+            <div class="synth__card">
+              <div class="synth__card-title">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><polyline points="12,6 12,12 16,14"/></svg>
+                Créances par ancienneté (aging)
+              </div>
+              <table class="synth__table" aria-label="Balance âgée des créances">
+                <th scope="col"ead>
+                  <tr><th scope="col">Tranche</th><th scope="col">Montant</th><th scope="col">%</th><th scope="col">Factures</th></tr>
+                </thead>
+                <tbody>
+                  <tr>
+                    <td>0 – 30 jours</td>
+                    <td class="u-tabular-nums">12 450 €</td>
+                    <td class="u-tabular-nums">43,7 %</td>
+                    <td class="u-tabular-nums">6</td>
+                  </tr>
+                  <tr>
+                    <td>31 – 60 jours</td>
+                    <td class="u-tabular-nums">8 920 €</td>
+                    <td class="u-tabular-nums">31,3 %</td>
+                    <td class="u-tabular-nums">4</td>
+                  </tr>
+                  <tr>
+                    <td>61 – 90 jours</td>
+                    <td class="u-tabular-nums">4 600 €</td>
+                    <td class="u-tabular-nums">16,2 %</td>
+                    <td class="u-tabular-nums">2</td>
+                  </tr>
+                  <tr style="color:var(--color-danger);font-weight:600">
+                    <td>> 90 jours</td>
+                    <td class="u-tabular-nums">2 500 €</td>
+                    <td class="u-tabular-nums">8,8 %</td>
+                    <td class="u-tabular-nums">2</td>
+                  </tr>
+                  <tr>
+                    <td>Total</td>
+                    <td class="u-tabular-nums">28 470 €</td>
+                    <td class="u-tabular-nums">100 %</td>
+                    <td class="u-tabular-nums">14</td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+
+            <!-- Top debtors -->
+            <div class="synth__card">
+              <div class="synth__card-title">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
+                Top 10 comptes débiteurs
+              </div>
+              <table class="synth__table" aria-label="Top comptes débiteurs">
+                <th scope="col"ead>
+                  <tr><th scope="col">Établissement</th><th scope="col">SIRET</th><th scope="col">Montant dû</th><th scope="col">Retard</th></tr>
+                </thead>
+                <tbody>
+                  <tr>
+                    <td><strong>Atelier Durand Arch.</strong></td>
+                    <td class="u-tabular-nums u-text--xs">41234567801</td>
+                    <td class="u-tabular-nums">8 450 €</td>
+                    <td>45 j</td>
+                  </tr>
+                  <tr>
+                    <td><strong>BET Conseil Ing.</strong></td>
+                    <td class="u-tabular-nums u-text--xs">52345678912</td>
+                    <td class="u-tabular-nums">6 280 €</td>
+                    <td>28 j</td>
+                  </tr>
+                  <tr>
+                    <td><strong>Urban Studio</strong></td>
+                    <td class="u-tabular-nums u-text--xs">63456789023</td>
+                    <td class="u-tabular-nums">5 120 €</td>
+                    <td>12 j</td>
+                  </tr>
+                  <tr>
+                    <td><strong>Archi Nova</strong></td>
+                    <td class="u-tabular-nums u-text--xs">74567890134</td>
+                    <td class="u-tabular-nums">4 650 €</td>
+                    <td>3 j</td>
+                  </tr>
+                  <tr>
+                    <td><strong>BET Structure Plus</strong></td>
+                    <td class="u-tabular-nums u-text--xs">85678901245</td>
+                    <td class="u-tabular-nums">3 970 €</td>
+                    <td>1 j</td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+
+        <!-- ============================================================
+             PANEL: RÉABONNEMENTS
+             ============================================================ -->
+        <!-- ====== SECTION : Réabonnements ====== -->
+        <div class="tabs__panel" id="panel-reabonnements" role="tabpanel" aria-labelledby="tab-reabonnements">
+
+          <!-- Toolbar -->
+          <div class="reabo__toolbar">
+            <div class="reabo__toolbar-left">
+              <select class="reabo__campaign-select" aria-label="Campagne">
+                <option>Toutes les campagnes</option>
+                <option>Campagne Q1 2026</option>
+                <option>Campagne Q4 2025</option>
+              </select>
+            </div>
+            <div class="reabo__toolbar-right">
+              <button class="btn btn--secondary" hx-get="/api/compta/reabonnements/export/">Export CSV</button>
+            </div>
+          </div>
+
+          <!-- KPIs -->
+          <div class="reabo__kpis">
+            <div class="reabo__kpi">
+              <div class="reabo__kpi-label">Total</div>
+              <div class="reabo__kpi-value">142</div>
+            </div>
+            <div class="reabo__kpi">
+              <div class="reabo__kpi-label">Validés</div>
+              <div class="reabo__kpi-value" style="color:#16a34a">89</div>
+            </div>
+            <div class="reabo__kpi">
+              <div class="reabo__kpi-label">En attente</div>
+              <div class="reabo__kpi-value" style="color:var(--color-warning)">42</div>
+            </div>
+            <div class="reabo__kpi">
+              <div class="reabo__kpi-label">Refusés</div>
+              <div class="reabo__kpi-value" style="color:var(--color-danger)">8</div>
+            </div>
+            <div class="reabo__kpi">
+              <div class="reabo__kpi-label">Non traités</div>
+              <div class="reabo__kpi-value" style="color:var(--text-tertiary)">3</div>
+            </div>
+          </div>
+
+          <!-- Filters -->
+          <div class="reabo__filters">
+            <div class="reabo__search-wrap">
+              <svg fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 16 16"><circle cx="6.5" cy="6.5" r="4.5"/><path d="M14 14l-3.5-3.5"/></svg>
+              <input class="reabo__search" placeholder="Rechercher un client…" aria-label="Rechercher">
+            </div>
+            <select class="reabo__filter" hx-get="/api/compta/reabonnements/?etat=Validé" aria-label="État">
+              <option value="">Tous états</option>
+              <option value="Validé">Validé</option>
+              <option value="Attente">En attente</option>
+              <option value="Refusé">Refusé</option>
+            </select>
+            <select class="reabo__filter" aria-label="Plan">
+              <option value="">Tous plans</option>
+              <option value="Performance">Performance</option>
+              <option value="Confort">Confort</option>
+              <option value="Découverte">Découverte</option>
+            </select>
+          </div>
+
+          <!-- Table -->
+          <div class="reabo__table-wrap">
+            <table class="reabo__table">
+              <th scope="col"ead>
+                <tr>
+                  <th scope="col">Client</th>
+                  <th scope="col">SIRET</th>
+                  <th scope="col">Plan</th>
+                  <th scope="col">Tarif</th>
+                  <th scope="col">État</th>
+                  <th scope="col">Commercial</th>
+                  <th scope="col" style="text-align:center">Actions</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr onclick="openReaboPanel('reabo-001')">
+                  <td><strong>Atelier Durand Arch.</strong></td>
+                  <td class="u-tabular-nums u-text--xs">41234567801</td>
+                  <td><span class="pill" style="background:#dbeafe;color:#1e40af">Performance</span></td>
+                  <td class="u-tabular-nums">4 500 €/an</td>
+                  <td><span class="pill pill--payee">Validé</span></td>
+                  <td>Dupont, M.</td>
+                  <td style="text-align:center"><button class="btn--ghost" style="font-size:var(--text-xs)">Voir →</button></td>
+                </tr>
+                <tr onclick="openReaboPanel('reabo-002')">
+                  <td><strong>BET Conseil Ing.</strong></td>
+                  <td class="u-tabular-nums u-text--xs">52345678912</td>
+                  <td><span class="pill" style="background:#f0fdf4;color:#166534">Découverte</span></td>
+                  <td class="u-tabular-nums">2 500 €/an</td>
+                  <td><span class="pill pill--partielle">Attente</span></td>
+                  <td>Blanc, J.</td>
+                  <td style="text-align:center"><button class="btn--ghost" style="font-size:var(--text-xs)">Voir →</button></td>
+                </tr>
+                <tr onclick="openReaboPanel('reabo-003')">
+                  <td><strong>Urban Studio</strong></td>
+                  <td class="u-tabular-nums u-text--xs">63456789023</td>
+                  <td><span class="pill" style="background:#dbeafe;color:#1e40af">Confort</span></td>
+                  <td class="u-tabular-nums">3 800 €/an</td>
+                  <td><span class="pill pill--emise">Validé</span></td>
+                  <td>Martin, S.</td>
+                  <td style="text-align:center"><button class="btn--ghost" style="font-size:var(--text-xs)">Voir →</button></td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+        <!-- ============================================================
+             PANEL: FACTURATION
+             ============================================================ -->
+        <!-- ====== SECTION : Facturation ====== -->
+        <div class="tabs__panel" id="panel-facturation" role="tabpanel" aria-labelledby="tab-facturation">
+
+          <!-- Sub-tabs -->
+          <div class="facture__subtabs">
+            <button class="facture__subtab active" data-subtab="factures">Factures</button>
+            <button class="facture__subtab" data-subtab="encaissements">Encaissements</button>
+          </div>
+
+          <!-- Factures sub-panel -->
+          <div class="facture__subpanel active" id="subpanel-factures">
+
+            <!-- Toolbar -->
+            <div class="facture__toolbar">
+              <div class="facture__toolbar-left">
+                <div class="facture__search-wrap">
+                  <svg fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 16 16"><circle cx="6.5" cy="6.5" r="4.5"/><path d="M14 14l-3.5-3.5"/></svg>
+                  <input class="facture__search" placeholder="Rechercher…" hx-get="/api/compta/factures/" aria-label="Rechercher factures">
+                </div>
+                <select class="facture__filter" hx-get="/api/compta/factures/" aria-label="État">
+                  <option value="">Tous états</option>
+                  <option value="emise">Émise</option>
+                  <option value="envoyee">Envoyée</option>
+                  <option value="payee">Payée</option>
+                  <option value="partielle">Partiellement payée</option>
+                </select>
+              </div>
+              <div class="facture__toolbar-right">
+                <button class="btn btn--secondary" hx-get="/api/compta/factures/export/">Export CSV</button>
+                <button class="btn btn--primary">Nouvelle facture</button>
+              </div>
+            </div>
+
+            <!-- Table -->
+            <div class="facture__table-wrap">
+              <table class="facture__table">
+                <th scope="col"ead>
+                  <tr>
+                    <th scope="col">N° Facture</th>
+                    <th scope="col">Client</th>
+                    <th scope="col">SIRET</th>
+                    <th scope="col">Date</th>
+                    <th scope="col">Montant HT</th>
+                    <th scope="col">Montant TTC</th>
+                    <th scope="col">État</th>
+                    <th scope="col" style="text-align:center">Actions</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr>
+                    <td><strong>FAC-2026-001</strong></td>
+                    <td>Atelier Durand Arch.</td>
+                    <td class="u-tabular-nums u-text--xs">41234567801</td>
+                    <td>2026-01-15</td>
+                    <td class="u-tabular-nums">4 500 €</td>
+                    <td class="u-tabular-nums">5 400 €</td>
+                    <td><span class="pill pill--payee">Payée</span></td>
+                    <td style="text-align:center"><button class="btn--ghost" style="font-size:var(--text-xs)">Voir →</button></td>
+                  </tr>
+                  <tr>
+                    <td><strong>FAC-2026-002</strong></td>
+                    <td>BET Conseil Ing.</td>
+                    <td class="u-tabular-nums u-text--xs">52345678912</td>
+                    <td>2026-02-01</td>
+                    <td class="u-tabular-nums">2 500 €</td>
+                    <td class="u-tabular-nums">3 000 €</td>
+                    <td><span class="pill pill--partielle">Partielle</span></td>
+                    <td style="text-align:center"><button class="btn--ghost" style="font-size:var(--text-xs)">Voir →</button></td>
+                  </tr>
+                  <tr>
+                    <td><strong>FAC-2026-003</strong></td>
+                    <td>Urban Studio</td>
+                    <td class="u-tabular-nums u-text--xs">63456789023</td>
+                    <td>2026-02-10</td>
+                    <td class="u-tabular-nums">3 800 €</td>
+                    <td class="u-tabular-nums">4 560 €</td>
+                    <td><span class="pill pill--envoyee">Envoyée</span></td>
+                    <td style="text-align:center"><button class="btn--ghost" style="font-size:var(--text-xs)">Voir →</button></td>
+                  </tr>
+                  <tr>
+                    <td><strong>FAC-2026-004</strong></td>
+                    <td>Archi Nova</td>
+                    <td class="u-tabular-nums u-text--xs">74567890134</td>
+                    <td>2026-02-15</td>
+                    <td class="u-tabular-nums">1 200 €</td>
+                    <td class="u-tabular-nums">1 440 €</td>
+                    <td><span class="pill pill--retard">Retard</span></td>
+                    <td style="text-align:center"><button class="btn--ghost" style="font-size:var(--text-xs)">Voir →</button></td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
+
+          <!-- Encaissements sub-panel -->
+          <div class="facture__subpanel" id="subpanel-encaissements">
+
+            <!-- Toolbar -->
+            <div class="facture__toolbar">
+              <div class="facture__toolbar-right">
+                <button class="btn btn--secondary">Nouvel encaissement</button>
+              </div>
+            </div>
+
+            <!-- Table -->
+            <div class="facture__table-wrap">
+              <table class="facture__table">
+                <th scope="col"ead>
+                  <tr>
+                    <th scope="col">Date</th>
+                    <th scope="col">Facture</th>
+                    <th scope="col">Mode</th>
+                    <th scope="col">Montant</th>
+                    <th scope="col">Référence</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr>
+                    <td>2026-01-20</td>
+                    <td><strong>FAC-2026-001</strong></td>
+                    <td><span style="background:#dbeafe;color:#1e40af;padding:2px 8px;border-radius:var(--radius-full);font-size:10px;font-weight:600">Virement</span></td>
+                    <td class="u-tabular-nums">5 400 €</td>
+                    <td class="u-tabular-nums u-text--xs">VIR-202601-001</td>
+                  </tr>
+                  <tr>
+                    <td>2026-02-05</td>
+                    <td><strong>FAC-2026-002</strong></td>
+                    <td><span style="background:#f0fdf4;color:#166534;padding:2px 8px;border-radius:var(--radius-full);font-size:10px;font-weight:600">Prélèvement</span></td>
+                    <td class="u-tabular-nums">1 500 €</td>
+                    <td class="u-tabular-nums u-text--xs">PRE-202602-001</td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+
+      </main>
+
+    </div>
+
+  </div>
+
+  <!-- ============================================================
+       SIDEBAR TOGGLE SCRIPT
+       ============================================================ -->
+  <script>
+    const sidebar = document.getElementById('sidebar');
+    const sidebarToggle = document.getElementById('sidebarToggle');
+
+    sidebarToggle.addEventListener('click', () => {
+      sidebar.classList.toggle('sidebar--collapsed');
+      const isCollapsed = sidebar.classList.contains('sidebar--collapsed');
+      sidebarToggle.setAttribute('aria-label', isCollapsed ? 'Étendre la barre latérale' : 'Réduire la barre latérale');
+    });
+
+    /* --- Tab switching (Synthèse / Réabonnements / Facturation) --- */
+    document.querySelectorAll('.tabs__item').forEach(tab => {
+      tab.addEventListener('click', () => {
+        const tabName = tab.dataset.tab;
+        document.querySelectorAll('.tabs__item').forEach(t => t.classList.remove('active'));
+        document.querySelectorAll('.tabs__panel').forEach(p => p.classList.remove('active'));
+        tab.classList.add('active');
+        document.getElementById(`panel-${tabName}`).classList.add('active');
+      });
+    });
+
+    /* --- Sub-tab switching (Factures / Encaissements) --- */
+    document.querySelectorAll('.facture__subtab').forEach(tab => {
+      tab.addEventListener('click', () => {
+        const subTabName = tab.dataset.subtab;
+        document.querySelectorAll('.facture__subtab').forEach(t => t.classList.remove('active'));
+        document.querySelectorAll('.facture__subpanel').forEach(p => p.classList.remove('active'));
+        tab.classList.add('active');
+        document.getElementById(`subpanel-${subTabName}`).classList.add('active');
+      });
+    });
+
+    /* --- Period selector toggle --- */
+    document.querySelectorAll('.synth__period-btn').forEach(btn => {
+      btn.addEventListener('click', () => {
+        document.querySelectorAll('.synth__period-btn').forEach(b => b.classList.remove('active'));
+        btn.classList.add('active');
+        const customRange = document.getElementById('customDateRange');
+        if (btn.dataset.period === 'custom') {
+          customRange.classList.add('active');
+        } else {
+          customRange.classList.remove('active');
+        }
+      });
+    });
+
+    /* --- Chart generation (realistic financial data) --- */
+    function generateCharts() {
+      // Bar chart: CA facturé vs encaissé (12 months)
+      const months = ['Janv.', 'Févr.', 'Mars', 'Avr.', 'Mai', 'Juin', 'Juil.', 'Août', 'Sept.', 'Oct.', 'Nov.', 'Déc.'];
+      const barChart = document.getElementById('barChart');
+      barChart.innerHTML = months.map((month, i) => {
+        const facture = Math.random() * 30000 + 20000;
+        const encaisse = facture * (0.85 + Math.random() * 0.1);
+        const maxVal = 50000;
+        const h1 = (facture / maxVal) * 170;
+        const h2 = (encaisse / maxVal) * 170;
+        return `<div class="synth__chart-group">
+          <div class="synth__chart-bar-pair">
+            <div class="synth__chart-bar facture" style="height:${h1}px"></div>
+            <div class="synth__chart-bar encaisse" style="height:${h2}px"></div>
+          </div>
+          <div class="synth__chart-label">${month}</div>
+        </div>`;
+      }).join('');
+
+      // Donut chart: répartition par plan
+      const plans = [
+        { name: 'Performance', value: 45, color: '#dbeafe', textColor: '#1e40af' },
+        { name: 'Confort', value: 35, textColor: '#166534', color: '#f0fdf4' },
+        { name: 'Découverte', value: 15, color: '#ccfbf1', textColor: '#0d9488' },
+        { name: 'Plancher', value: 5, color: '#f4f4f5', textColor: '#52525b' }
+      ];
+      const donut = document.getElementById('donutPlan');
+      const legend = document.getElementById('donutPlanLegend');
+      let offset = 0;
+      donut.innerHTML = '';
+      plans.forEach((plan, i) => {
+        const circumference = 2 * Math.PI * 14;
+        const strokeDashoffset = circumference - (plan.value / 100) * circumference;
+        donut.innerHTML += `<circle cx="18" cy="18" r="14" fill="none" stroke="${plan.color}" stroke-width="4" stroke-dasharray="${circumference}" stroke-dashoffset="${strokeDashoffset}" transform="rotate(${offset * 3.6} 18 18)"/>`;
+        legend.innerHTML += `<div style="display:flex;align-items:center;gap:var(--sp-2);font-size:var(--text-xs)">
+          <div style="width:8px;height:8px;border-radius:2px;background:${plan.color}"></div>
+          <span style="color:var(--text-secondary)">${plan.name}</span>
+          <span style="color:var(--text-primary);font-weight:600;margin-left:auto">${plan.value}%</span>
+        </div>`;
+        offset += plan.value;
+      });
+    }
+
+    generateCharts();
+
+    function openReaboPanel(id) {
+      alert(`Détail réabonnement: ${id}`);
+    }
+  </script>
+
+</body>
+</html>

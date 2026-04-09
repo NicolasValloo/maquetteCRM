@@ -1,0 +1,602 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>CRM SaaS — Comptabilité Générale & Analytique</title>
+  <link rel="stylesheet" href="design-system.css">
+  <style>
+    /* ============================================================
+       Shell overrides
+       ============================================================ */
+    .sidebar__item--active { color: var(--text-inverse); background: var(--accent-600); }
+
+    /* ============================================================
+       Module Comptabilité Générale — Layout
+       ============================================================ */
+    .compta__container { padding: 0; display: flex; flex-direction: column; height: calc(100vh - 46px); overflow: hidden; }
+
+    /* ============================================================
+       SECTION TABS (Dashboard / Plan / Écritures / Fournisseurs / etc.)
+       ============================================================ */
+    .section-tabs { display: flex; border-bottom: 1px solid var(--border-subtle); padding: 0 var(--sp-5); flex-shrink: 0; background: var(--bg-surface); }
+    .section-tabs__item { padding: var(--sp-2-5) var(--sp-3); font-size: var(--text-xs); font-weight: 500; color: var(--text-tertiary); cursor: pointer; border-bottom: 2px solid transparent; transition: all var(--duration-fast) var(--ease-in-out); white-space: nowrap; display: flex; align-items: center; gap: var(--sp-1); }
+    .section-tabs__item:hover { color: var(--text-primary); }
+    .section-tabs__item.active { color: var(--accent-600); border-bottom-color: var(--accent-600); font-weight: 600; }
+    .section-tabs__item svg { width: 14px; height: 14px; }
+    .section-tabs__item.disabled { opacity: .4; cursor: default; }
+
+    .section { display: none; flex: 1; overflow-y: auto; flex-direction: column; }
+    .section.active { display: flex; }
+
+    /* ============================================================
+       DASHBOARD
+       ============================================================ */
+    .dash { display: grid; grid-template-columns: repeat(6, 1fr); gap: var(--sp-3); padding: var(--sp-4) var(--sp-5) var(--sp-2); flex-shrink: 0; }
+    .dash__kpi { background: var(--bg-surface); border: 1px solid var(--border-subtle); border-radius: var(--radius-lg); padding: var(--sp-3) var(--sp-4); }
+    .dash__kpi--loading { opacity: 0.6; pointer-events: none; }
+    .dash__kpi-label { font-size: var(--text-xs); color: var(--text-tertiary); margin-bottom: var(--sp-1); display: flex; align-items: center; gap: var(--sp-1); }
+    .dash__kpi-label svg { width: 13px; height: 13px; }
+    .dash__kpi-value { font-size: var(--text-xl); font-weight: 700; color: var(--text-primary); font-variant-numeric: tabular-nums; }
+    .dash__kpi-sub { font-size: var(--text-xs); color: var(--text-muted); margin-top: 2px; }
+
+    /* ============================================================
+       TOOLBAR
+       ============================================================ */
+    .toolbar { display: flex; align-items: center; justify-content: space-between; padding: var(--sp-2) var(--sp-5); border-bottom: 1px solid var(--border-subtle); flex-shrink: 0; background: var(--bg-surface); }
+    .toolbar__left { display: flex; align-items: center; gap: var(--sp-2); }
+    .toolbar__right { display: flex; align-items: center; gap: var(--sp-2); }
+    .toolbar__search-wrap { position: relative; display: flex; align-items: center; }
+    .toolbar__search-wrap svg { position: absolute; left: 8px; color: var(--text-muted); pointer-events: none; width: 14px; height: 14px; }
+    .toolbar__search { padding: var(--sp-1-5) var(--sp-2-5) var(--sp-1-5) 28px; font-size: var(--text-xs); border: 1px solid var(--border-default); border-radius: var(--radius-md); background: var(--bg-surface); width: 220px; }
+    .toolbar__search:focus { border-color: var(--accent-500); box-shadow: 0 0 0 2px rgba(59,130,246,.15); }
+    .toolbar__filter { padding: var(--sp-1-5) var(--sp-2-5); font-size: var(--text-xs); border: 1px solid var(--border-default); border-radius: var(--radius-md); background: var(--bg-surface); color: var(--text-secondary); cursor: pointer; }
+
+    /* ============================================================
+       TABLES
+       ============================================================ */
+    .table-wrap { flex: 1; overflow-y: auto; }
+    .table { width: 100%; border-collapse: collapse; }
+    .table thead { position: sticky; top: 0; z-index: 10; background: var(--bg-surface); }
+    .table th { font-size: 10px; font-weight: 600; text-transform: uppercase; letter-spacing: .04em; color: var(--text-muted); text-align: left; padding: var(--sp-2) var(--sp-3); border-bottom: 1px solid var(--border-subtle); white-space: nowrap; user-select: none; }
+    .table td { font-size: var(--text-xs); padding: var(--sp-2) var(--sp-3); border-bottom: 1px solid var(--border-subtle); color: var(--text-secondary); vertical-align: middle; }
+    .table tr.clickable { cursor: pointer; }
+    .table tr.clickable:hover td { background: var(--bg-hover); }
+    .table .u-tabular-nums { font-family: var(--font-mono); font-variant-numeric: tabular-nums; }
+    .table .u-text-right { text-align: right; }
+
+    /* ============================================================
+       PLAN COMPTABLE TREE
+       ============================================================ */
+    .pcg-tree { padding: var(--sp-3) var(--sp-5); flex: 1; overflow-y: auto; }
+    .pcg-node { margin-left: 0; }
+    .pcg-node-inner { display: flex; align-items: center; gap: var(--sp-2); padding: var(--sp-1-5) var(--sp-2); border-radius: var(--radius-md); cursor: pointer; transition: background var(--duration-fast); }
+    .pcg-node-inner:hover { background: var(--bg-hover); }
+    .pcg-toggle { width: 16px; height: 16px; display: flex; align-items: center; justify-content: center; color: var(--text-muted); transition: transform var(--duration-fast); flex-shrink: 0; font-size: 10px; }
+    .pcg-toggle.open { transform: rotate(90deg); }
+    .pcg-toggle.leaf { visibility: hidden; }
+    .pcg-num { font-family: var(--font-mono); font-size: var(--text-xs); font-weight: 600; color: var(--accent-600); min-width: 56px; }
+    .pcg-label { font-size: var(--text-xs); color: var(--text-primary); font-weight: 500; }
+    .pcg-meta { font-size: 10px; color: var(--text-muted); margin-left: auto; display: flex; gap: var(--sp-3); align-items: center; }
+    .pcg-children { margin-left: 20px; border-left: 1px solid var(--border-subtle); }
+    .pcg-children.collapsed { display: none; }
+
+    /* ============================================================
+       STATE PILLS
+       ============================================================ */
+    .pill { display: inline-flex; align-items: center; padding: 1px 8px; border-radius: var(--radius-full); font-size: 10px; font-weight: 600; white-space: nowrap; }
+    .pill--blue { background: #dbeafe; color: #1e40af; }
+    .pill--green { background: #dcfce7; color: #166534; }
+    .pill--yellow { background: #fef3c7; color: #92400e; }
+    .pill--red { background: #fee2e2; color: #991b1b; }
+    .pill--gray { background: var(--gray-100); color: var(--gray-600); }
+    .pill--brouillard { background: #fef3c7; color: #92400e; border: 1px dashed #fbbf24; }
+
+    /* ============================================================
+       LETTRAGE & RAPPROCHEMENT — Panels côte à côte
+       ============================================================ */
+    .lr-container { display: flex; gap: 0; flex: 1; overflow: hidden; }
+    .lr-panel { flex: 1; display: flex; flex-direction: column; overflow: hidden; border-right: 1px solid var(--border-subtle); }
+    .lr-panel:last-child { border-right: none; }
+    .lr-panel-hd { padding: var(--sp-2-5) var(--sp-3); background: var(--bg-muted); border-bottom: 1px solid var(--border-subtle); font-size: var(--text-xs); font-weight: 600; color: var(--text-primary); display: flex; align-items: center; justify-content: space-between; }
+    .lr-panel-bd { flex: 1; overflow-y: auto; }
+    .lr-row { display: flex; align-items: center; padding: var(--sp-1-5) var(--sp-3); border-bottom: 1px solid var(--border-subtle); font-size: var(--text-xs); gap: var(--sp-2); cursor: pointer; transition: background var(--duration-fast); }
+    .lr-row:hover { background: var(--bg-hover); }
+    .lr-row.selected { background: var(--accent-50); border-left: 3px solid var(--accent-500); }
+    .lr-row.done { background: #f0fdf4; opacity: .5; pointer-events: none; }
+    .lr-chk { width: 16px; height: 16px; border: 1.5px solid var(--border-strong); border-radius: 3px; flex-shrink: 0; display: flex; align-items: center; justify-content: center; transition: all var(--duration-fast); }
+    .lr-row.selected .lr-chk { background: var(--accent-600); border-color: var(--accent-600); color: #fff; }
+    .lr-row.done .lr-chk { background: #dcfce7; border-color: #86efac; }
+    .lr-date { width: 70px; color: var(--text-muted); flex-shrink: 0; font-family: var(--font-mono); font-size: 10px; }
+    .lr-ref { width: 90px; color: var(--text-tertiary); flex-shrink: 0; font-size: 10px; }
+    .lr-lib { flex: 1; color: var(--text-primary); font-weight: 500; }
+    .lr-amt { width: 90px; text-align: right; font-family: var(--font-mono); font-weight: 600; }
+    .lr-code { width: 28px; text-align: center; font-family: var(--font-mono); font-size: 10px; color: var(--accent-600); }
+
+    /* ============================================================
+       SHARED
+       ============================================================ */
+    .empty-state { padding: var(--sp-8); text-align: center; color: var(--text-muted); font-size: var(--text-sm); }
+    .empty-state svg { width: 48px; height: 48px; margin: 0 auto var(--sp-4); opacity: 0.5; }
+
+    /* Alert box */
+    .alert { display: flex; align-items: center; gap: var(--sp-2); padding: var(--sp-2) var(--sp-3); border-radius: var(--radius-md); font-size: var(--text-xs); margin-bottom: var(--sp-1-5); }
+    .alert--danger { background: var(--color-danger-subtle); border: 1px solid #fecaca; color: #991b1b; }
+    .alert--warning { background: var(--color-warning-subtle); border: 1px solid #fde68a; color: #78350f; }
+    .alert-label { font-weight: 600; }
+
+    /* Summary bar */
+    .summary-bar { display: flex; gap: var(--sp-4); padding: var(--sp-2-5) var(--sp-5); background: var(--bg-muted); border-top: 1px solid var(--border-subtle); flex-shrink: 0; font-size: var(--text-xs); }
+    .summary-item { display: flex; align-items: center; gap: var(--sp-1); }
+    .summary-label { color: var(--text-muted); }
+    .summary-value { font-weight: 700; font-family: var(--font-mono); }
+  </style>
+</head>
+<body>
+
+  <!-- Skip-to-content link for accessibility -->
+  <a href="#main-content" class="skip-link">Aller au contenu</a>
+
+  <!-- ============================================================
+       APP SHELL (adapted from shell.html v2)
+       ============================================================ -->
+  <div class="app">
+
+    <!-- SIDEBAR -->
+    <aside class="sidebar" id="sidebar" role="navigation" aria-label="Navigation principale">
+      <div class="sidebar__header">
+        <div class="sidebar__logo">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width:20px;height:20px"><rect x="3" y="3" width="7" height="7" rx="2"/><rect x="14" y="3" width="7" height="7" rx="2"/><rect x="3" y="14" width="7" height="7" rx="2"/><circle cx="17.5" cy="17.5" r="3.5"/></svg>
+          <span>CRM SaaS</span>
+        </div>
+        <button class="sidebar__toggle" id="sidebarToggle" aria-label="Réduire la sidebar">
+          <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" style="width:16px;height:16px"><path d="M10 3L5 8l5 5"/></svg>
+        </button>
+      </div>
+
+      <nav class="sidebar__nav">
+        <div class="sidebar__section">
+          <div class="sidebar__section-label">Opérations</div>
+          <a href="compta.html" class="sidebar__item sidebar__item--active" data-page="compta">
+            <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M3 3h10v10H3z"/><path d="M7 7h3M7 10h2"/></svg>
+            <span>Comptabilité</span>
+          </a>
+        </div>
+      </nav>
+
+      <div class="sidebar__footer">
+        <div class="sidebar__user">
+          <div class="sidebar__user-avatar">SL</div>
+          <div class="sidebar__user-info">
+            <div class="sidebar__user-name">Sophie Lemaire</div>
+            <div class="sidebar__user-role">Administratrice</div>
+          </div>
+        </div>
+      </div>
+    </aside>
+
+    <!-- MAIN AREA -->
+    <div class="main">
+
+      <!-- TOPBAR -->
+      <header class="topbar" role="banner">
+        <nav class="topbar__breadcrumb" aria-label="Fil d'Ariane">
+          <span class="topbar__breadcrumb-current">Comptabilité Générale & Analytique</span>
+          <span class="pill pill--blue" style="margin-left:var(--sp-2)">Exercice 2025</span>
+        </nav>
+        <div style="display:flex;align-items:center;gap:var(--sp-2)">
+          <button class="topbar__bell" aria-label="Notifications">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 0 1-3.46 0"/>
+            </svg>
+            <span class="topbar__bell-dot"></span>
+          </button>
+        </div>
+      </header>
+
+      <!-- CONTENT -->
+      <main class="content compta__container" id="main-content">
+
+        <!-- === SECTION TABS === -->
+        <nav class="section-tabs" role="tablist">
+          <button class="section-tabs__item active" data-sec="dashboard" role="tab" aria-selected="true">
+            <svg fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 16 16"><rect x="2" y="2" width="5" height="5" rx="1"/><rect x="9" y="2" width="5" height="5" rx="1"/><rect x="2" y="9" width="5" height="5" rx="1"/><rect x="9" y="9" width="5" height="5" rx="1"/></svg>
+            Tableau de bord
+          </button>
+          <button class="section-tabs__item" data-sec="plan" role="tab">
+            <svg fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 16 16"><path d="M3 2h10v12H3z"/><path d="M6 5h4M6 8h4M6 11h2"/></svg>
+            Plan comptable
+          </button>
+          <button class="section-tabs__item" data-sec="ecritures" role="tab">
+            <svg fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 16 16"><path d="M2 4h12M2 8h8M2 12h10"/></svg>
+            Écritures
+          </button>
+          <button class="section-tabs__item" data-sec="fournisseurs" role="tab">
+            <svg fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 16 16"><path d="M3 3h10v10H3z"/><path d="M7 7h3M7 10h2"/></svg>
+            Fournisseurs
+          </button>
+          <button class="section-tabs__item" data-sec="lettrage" role="tab">
+            <svg fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 16 16"><path d="M2 4l4 4-4 4M8 12h6"/></svg>
+            Lettrage
+          </button>
+          <button class="section-tabs__item" data-sec="rapprochement" role="tab">
+            <svg fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 16 16"><rect x="1" y="3" width="14" height="10" rx="2"/><path d="M1 7h14"/></svg>
+            Rapprochement
+          </button>
+          <button class="section-tabs__item" data-sec="tva" role="tab">
+            <svg fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 16 16"><path d="M2 13V6l4-3 4 3v7"/><path d="M6 13v-4h4v4"/></svg>
+            TVA
+          </button>
+          <button class="section-tabs__item" data-sec="cloture" role="tab">
+            <svg fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 16 16"><path d="M4 4h8v8H4z"/><path d="M8 4v8M4 8h8"/></svg>
+            Clôture
+          </button>
+        </nav>
+
+        <!-- ======== DASHBOARD ======== -->
+        <div class="section active" id="sec-dashboard">
+          <!-- KPIs -->
+          <div class="dash">
+            <div class="dash__kpi"><div class="dash__kpi-label"><svg fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 16 16"><path d="M2 4h12M2 8h8M2 12h10"/></svg>Écritures validées</div><div class="dash__kpi-value">847</div><div class="dash__kpi-sub">Exercice 2025</div></div>
+            <div class="dash__kpi"><div class="dash__kpi-label"><svg fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 16 16"><path d="M2 4h12M2 8h8"/><circle cx="12" cy="11" r="3"/></svg>Brouillard</div><div class="dash__kpi-value" style="color:var(--color-warning)">23</div><div class="dash__kpi-sub">à valider</div></div>
+            <div class="dash__kpi"><div class="dash__kpi-label"><svg fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 16 16"><rect x="1" y="3" width="14" height="10" rx="2"/><path d="M1 7h14"/></svg>Solde banque</div><div class="dash__kpi-value" style="color:var(--color-success)">84 320 €</div><div class="dash__kpi-sub">Compte 512000 — BNP</div></div>
+            <div class="dash__kpi"><div class="dash__kpi-label"><svg fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 16 16"><path d="M8 2v6l4 2"/><circle cx="8" cy="8" r="6"/></svg>Créances clients</div><div class="dash__kpi-value">42 580 €</div><div class="dash__kpi-sub">dont > 90j : <span style="color:var(--color-danger);font-weight:700">3 200 €</span></div></div>
+            <div class="dash__kpi"><div class="dash__kpi-label"><svg fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 16 16"><path d="M4 12V6M8 12V4M12 12V8"/></svg>Dettes fournisseurs</div><div class="dash__kpi-value">28 120 €</div><div class="dash__kpi-sub">5 fournisseurs</div></div>
+            <div class="dash__kpi"><div class="dash__kpi-label"><svg fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 16 16"><path d="M2 13V6l4-3 4 3v7"/><path d="M6 13v-4h4v4"/></svg>TVA à payer</div><div class="dash__kpi-value" style="color:var(--color-danger)">3 560 €</div><div class="dash__kpi-sub">Déclaration CA3 — Janv.</div></div>
+          </div>
+          <!-- Alertes -->
+          <div style="padding:0 var(--sp-5) var(--sp-3)">
+            <div style="font-size:var(--text-xs);font-weight:600;color:var(--text-primary);margin-bottom:var(--sp-2)">Alertes comptables</div>
+            <div style="display:flex;flex-direction:column;gap:var(--sp-1-5)">
+              <div class="alert alert--danger">
+                <span class="alert-label">⚠ Bloquant</span>
+                <span>23 écritures en brouillard à valider avant clôture Janvier</span>
+                <button class="btn--ghost" style="margin-left:auto;font-size:10px">Voir →</button>
+              </div>
+              <div class="alert alert--warning">
+                <span class="alert-label">⚡ Avertissement</span>
+                <span>Créance Cabinet Duval > 90 jours — 3 200 € non lettré</span>
+              </div>
+            </div>
+          </div>
+          <!-- Dernières écritures -->
+          <div style="padding:0 var(--sp-5);flex:1;display:flex;flex-direction:column;overflow:hidden">
+            <div style="font-size:var(--text-xs);font-weight:600;color:var(--text-primary);margin-bottom:var(--sp-2);display:flex;align-items:center;justify-content:space-between"><span>Dernières écritures</span><button class="btn--ghost" style="font-size:10px">Tout voir →</button></div>
+            <div class="table-wrap" style="border:1px solid var(--border-subtle);border-radius:var(--radius-lg);overflow:hidden">
+              <table class="table">
+                <th scope="col"ead><tr><th scope="col">Date</th><th scope="col">Journal</th><th scope="col">N° pièce</th><th scope="col">Libellé</th><th scope="col" class="u-text-right">Débit</th><th scope="col" class="u-text-right">Crédit</th><th scope="col">Statut</th></tr></thead>
+                <tbody>
+                  <tr><td>2026-02-10</td><td><span class="pill pill--blue">HA</span></td><td>ACH-001</td><td>Facture fournitures bureau</td><td class="u-tabular-nums">— €</td><td class="u-tabular-nums">480 €</td><td><span class="pill pill--green">Validé</span></td></tr>
+                  <tr><td>2026-02-09</td><td><span class="pill pill--yellow">VE</span></td><td>FAC-2026-047</td><td>Service abonnement annuel</td><td class="u-tabular-nums">5 400 €</td><td class="u-tabular-nums">— €</td><td><span class="pill pill--green">Validé</span></td></tr>
+                  <tr><td>2026-02-08</td><td><span class="pill pill--red">BQ</span></td><td>VIR-001</td><td>Virement reçu Atelier Durand</td><td class="u-tabular-nums">5 400 €</td><td class="u-tabular-nums">— €</td><td><span class="pill pill--brouillard">Brouillard</span></td></tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+
+        <!-- ====== SECTION : Plan Comptable ====== -->
+        <div class="section" id="sec-plan">
+          <div class="toolbar">
+            <div class="toolbar__left">
+              <div class="toolbar__search-wrap"><svg fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 16 16"><circle cx="6.5" cy="6.5" r="4.5"/><path d="M14 14l-3.5-3.5"/></svg><input class="toolbar__search" placeholder="Rechercher un compte…" aria-label="Rechercher un compte" hx-get="/api/comptes" hx-trigger="keyup changed delay:300ms" hx-target="#plan-list" hx-swap="innerHTML"></div>
+              <select class="toolbar__filter" aria-label="Classe de comptes" hx-get="/api/comptes" hx-trigger="change" hx-target="#plan-list" hx-swap="innerHTML">
+                <option value="">Toutes les classes</option>
+                <option value="1">1 — Capitaux</option>
+                <option value="2">2 — Immobilisations</option>
+                <option value="4">4 — Tiers</option>
+                <option value="5">5 — Financiers</option>
+                <option value="6">6 — Charges</option>
+                <option value="7">7 — Produits</option>
+              </select>
+            </div>
+            <div class="toolbar__right">
+              <button class="btn btn--secondary"><svg fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 16 16"><path d="M3 6l5 5 5-5"/></svg>Tout déplier</button>
+              <button class="btn btn--primary"><svg fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 16 16"><path d="M8 3v10M3 8h10"/></svg>Nouveau sous-compte</button>
+            </div>
+          </div>
+          <div class="pcg-tree">
+            <div class="pcg-node">
+              <div class="pcg-node-inner">
+                <div class="pcg-toggle open">▶</div>
+                <span class="pcg-num">1</span>
+                <span class="pcg-label">Capitaux propres</span>
+              </div>
+              <div class="pcg-children">
+                <div class="pcg-node">
+                  <div class="pcg-node-inner">
+                    <div class="pcg-toggle">▶</div>
+                    <span class="pcg-num">1001</span>
+                    <span class="pcg-label">Capital social</span>
+                    <span class="pcg-meta">50 000 €</span>
+                  </div>
+                </div>
+                <div class="pcg-node">
+                  <div class="pcg-node-inner">
+                    <div class="pcg-toggle">▶</div>
+                    <span class="pcg-num">1061</span>
+                    <span class="pcg-label">Réserves</span>
+                    <span class="pcg-meta">12 500 €</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+            <div class="pcg-node">
+              <div class="pcg-node-inner">
+                <div class="pcg-toggle">▶</div>
+                <span class="pcg-num">2</span>
+                <span class="pcg-label">Immobilisations</span>
+              </div>
+            </div>
+            <div class="pcg-node">
+              <div class="pcg-node-inner">
+                <div class="pcg-toggle open">▶</div>
+                <span class="pcg-num">4</span>
+                <span class="pcg-label">Tiers</span>
+              </div>
+              <div class="pcg-children">
+                <div class="pcg-node">
+                  <div class="pcg-node-inner">
+                    <div class="pcg-toggle leaf">—</div>
+                    <span class="pcg-num">411</span>
+                    <span class="pcg-label">Clients</span>
+                    <span class="pcg-meta">42 580 €</span>
+                  </div>
+                </div>
+                <div class="pcg-node">
+                  <div class="pcg-node-inner">
+                    <div class="pcg-toggle leaf">—</div>
+                    <span class="pcg-num">401</span>
+                    <span class="pcg-label">Fournisseurs</span>
+                    <span class="pcg-meta">28 120 €</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+            <div class="pcg-node">
+              <div class="pcg-node-inner">
+                <div class="pcg-toggle open">▶</div>
+                <span class="pcg-num">5</span>
+                <span class="pcg-label">Comptes financiers</span>
+              </div>
+              <div class="pcg-children">
+                <div class="pcg-node">
+                  <div class="pcg-node-inner">
+                    <div class="pcg-toggle leaf">—</div>
+                    <span class="pcg-num">512</span>
+                    <span class="pcg-label">Banque BNP</span>
+                    <span class="pcg-meta">84 320 €</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- ====== SECTION : Écritures ====== -->
+        <div class="section" id="sec-ecritures">
+          <div class="toolbar">
+            <div class="toolbar__left">
+              <div class="toolbar__search-wrap"><svg fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 16 16"><circle cx="6.5" cy="6.5" r="4.5"/><path d="M14 14l-3.5-3.5"/></svg><input class="toolbar__search" placeholder="Rechercher…" aria-label="Rechercher une écriture" hx-get="/api/ecritures" hx-trigger="keyup changed delay:300ms" hx-target="#ecritures-body" hx-swap="innerHTML"></div>
+              <select class="toolbar__filter" aria-label="Filtrer par journal" hx-get="/api/ecritures" hx-trigger="change" hx-target="#ecritures-body" hx-swap="innerHTML"><option value="">Tous journaux</option><option value="HA">HA — Achats</option><option value="VE">VE — Ventes</option><option value="BQ">BQ — Banque</option></select>
+              <select class="toolbar__filter" aria-label="Filtrer par statut" hx-get="/api/ecritures" hx-trigger="change" hx-target="#ecritures-body" hx-swap="innerHTML"><option value="">Tous statuts</option><option value="brouillard">Brouillard</option><option value="validé">Validé</option></select>
+            </div>
+            <div class="toolbar__right">
+              <button class="btn btn--secondary"><svg fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 16 16"><path d="M3 3h10v10H3z"/><path d="M7 7h3"/></svg>Saisie achat</button>
+              <button class="btn btn--secondary"><svg fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 16 16"><rect x="1" y="3" width="14" height="10" rx="2"/><path d="M1 7h14"/></svg>Saisie banque</button>
+              <button class="btn btn--primary"><svg fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 16 16"><path d="M8 3v10M3 8h10"/></svg>Nouvelle écriture</button>
+            </div>
+          </div>
+          <div class="table-wrap">
+            <table class="table">
+              <th scope="col"ead>
+                <tr><th scope="col">Date</th><th scope="col">Journal</th><th scope="col">N° pièce</th><th scope="col">Compte</th><th scope="col">Libellé</th><th scope="col" class="u-text-right">Débit</th><th scope="col" class="u-text-right">Crédit</th><th scope="col">Statut</th><th scope="col">Actions</th></tr>
+              </thead>
+              <tbody id="ecritures-body">
+                <tr class="clickable">
+                  <td>2026-02-10</td>
+                  <td><span class="pill pill--blue">HA</span></td>
+                  <td>ACH-001</td>
+                  <td class="u-tabular-nums">601001</td>
+                  <td>Fournitures bureau</td>
+                  <td class="u-tabular-nums u-text-right">— €</td>
+                  <td class="u-tabular-nums u-text-right">480 €</td>
+                  <td><span class="pill pill--green">Validé</span></td>
+                  <td><button class="btn--ghost" style="font-size:var(--text-xs)">Éditer</button></td>
+                </tr>
+                <tr class="clickable">
+                  <td>2026-02-09</td>
+                  <td><span class="pill pill--yellow">VE</span></td>
+                  <td>FAC-047</td>
+                  <td class="u-tabular-nums">701001</td>
+                  <td>Prestation service Q1</td>
+                  <td class="u-tabular-nums u-text-right">5 400 €</td>
+                  <td class="u-tabular-nums u-text-right">— €</td>
+                  <td><span class="pill pill--green">Validé</span></td>
+                  <td><button class="btn--ghost" style="font-size:var(--text-xs)">Éditer</button></td>
+                </tr>
+                <tr class="clickable">
+                  <td>2026-02-08</td>
+                  <td><span class="pill pill--red">BQ</span></td>
+                  <td>VIR-001</td>
+                  <td class="u-tabular-nums">512000</td>
+                  <td>Virement reçu Atelier Durand</td>
+                  <td class="u-tabular-nums u-text-right">5 400 €</td>
+                  <td class="u-tabular-nums u-text-right">— €</td>
+                  <td><span class="pill pill--brouillard">Brouillard</span></td>
+                  <td><button class="btn--ghost" style="font-size:var(--text-xs)">Éditer</button></td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+        <!-- ====== SECTION : Lettrage ====== -->
+        <div class="section" id="sec-lettrage">
+          <div class="lr-container" id="lettrage-content">
+            <!-- Créances -->
+            <div class="lr-panel">
+              <div class="lr-panel-hd">Créances clients</div>
+              <div class="lr-panel-bd">
+                <div class="lr-row selected">
+                  <div class="lr-chk">✓</div>
+                  <div class="lr-date">2026-01-15</div>
+                  <div class="lr-ref">FAC-001</div>
+                  <div class="lr-lib">Atelier Durand</div>
+                  <div class="lr-amt">5 400 €</div>
+                </div>
+                <div class="lr-row">
+                  <div class="lr-chk"></div>
+                  <div class="lr-date">2026-02-01</div>
+                  <div class="lr-ref">FAC-002</div>
+                  <div class="lr-lib">BET Conseil</div>
+                  <div class="lr-amt">3 000 €</div>
+                </div>
+                <div class="lr-row done">
+                  <div class="lr-chk">✓</div>
+                  <div class="lr-date">2026-01-20</div>
+                  <div class="lr-ref">FAC-045</div>
+                  <div class="lr-lib">Urban Studio</div>
+                  <div class="lr-amt">4 560 €</div>
+                </div>
+              </div>
+            </div>
+            <!-- Encaissements -->
+            <div class="lr-panel">
+              <div class="lr-panel-hd">Encaissements</div>
+              <div class="lr-panel-bd">
+                <div class="lr-row done">
+                  <div class="lr-chk">✓</div>
+                  <div class="lr-date">2026-01-20</div>
+                  <div class="lr-ref">VIR-001</div>
+                  <div class="lr-lib">Atelier Durand</div>
+                  <div class="lr-amt">5 400 €</div>
+                </div>
+                <div class="lr-row">
+                  <div class="lr-chk"></div>
+                  <div class="lr-date">2026-02-05</div>
+                  <div class="lr-ref">PRE-002</div>
+                  <div class="lr-lib">BET Conseil (partiel)</div>
+                  <div class="lr-amt">1 500 €</div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- ====== SECTION : Rapprochement Bancaire ====== -->
+        <div class="section" id="sec-rapprochement">
+          <div class="toolbar">
+            <div class="toolbar__left">
+              <select class="toolbar__filter" aria-label="Sélectionner un compte bancaire" hx-get="/api/rapprochement" hx-trigger="change" hx-target="#rapprochement-content" hx-swap="innerHTML"><option value="">Toutes banques</option><option value="512">512 — BNP</option></select>
+              <select class="toolbar__filter" aria-label="Sélectionner un mois" hx-get="/api/rapprochement" hx-trigger="change" hx-target="#rapprochement-content" hx-swap="innerHTML">
+                <option value="">Février 2026</option>
+                <option value="">Janvier 2026</option>
+                <option value="">Décembre 2025</option>
+              </select>
+            </div>
+            <div class="toolbar__right">
+              <button class="btn btn--primary">Valider rapprochement</button>
+            </div>
+          </div>
+          <div class="lr-container" id="rapprochement-content">
+            <!-- Mouvements banque -->
+            <div class="lr-panel">
+              <div class="lr-panel-hd">Mouvements relevé bancaire</div>
+              <div class="lr-panel-bd">
+                <div class="lr-row">
+                  <div class="lr-chk"></div>
+                  <div class="lr-date">2026-02-10</div>
+                  <div class="lr-ref">VIR</div>
+                  <div class="lr-lib">Atelier Durand</div>
+                  <div class="lr-amt">5 400 €</div>
+                </div>
+                <div class="lr-row">
+                  <div class="lr-chk"></div>
+                  <div class="lr-date">2026-02-08</div>
+                  <div class="lr-ref">CHQ</div>
+                  <div class="lr-lib">Chèque fournisseur</div>
+                  <div class="lr-amt">— €</div>
+                </div>
+              </div>
+            </div>
+            <!-- Écritures comptables -->
+            <div class="lr-panel">
+              <div class="lr-panel-hd">Écritures comptables</div>
+              <div class="lr-panel-bd">
+                <div class="lr-row selected">
+                  <div class="lr-chk">✓</div>
+                  <div class="lr-date">2026-02-09</div>
+                  <div class="lr-ref">BQ-001</div>
+                  <div class="lr-lib">Virement reçu Atelier</div>
+                  <div class="lr-amt">5 400 €</div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- ======== PLACEHOLDER SECTIONS ======== -->
+        <div class="section" id="sec-fournisseurs">
+          <div class="empty-state">
+            <svg fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
+            <p>Section Fournisseurs — Gestion des tiers fournisseurs, conditions de paiement et historique factures fournisseurs.</p>
+          </div>
+        </div>
+
+        <div class="section" id="sec-tva">
+          <div class="empty-state">
+            <svg fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24"><path d="M2 13V6l4-3 4 3v7"/><path d="M6 13v-4h4v4"/></svg>
+            <p>Section TVA & Déclarations — Déclarations TVA CA3, registres d'achat/vente et génération de fichiers FEC.</p>
+          </div>
+        </div>
+
+        <div class="section" id="sec-cloture">
+          <div class="empty-state">
+            <svg fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24"><path d="M4 4h8v8H4z"/><path d="M8 4v8M4 8h8"/></svg>
+            <p>Section Clôture — Écritures de clôture d'exercice, bilan et compte de résultat, génération FEC.</p>
+          </div>
+        </div>
+
+      </main>
+
+    </div>
+
+  </div>
+
+  <!-- ============================================================
+       JAVASCRIPT
+       ============================================================ -->
+  <script>
+    const sidebar = document.getElementById('sidebar');
+    const sidebarToggle = document.getElementById('sidebarToggle');
+
+    sidebarToggle.addEventListener('click', () => {
+      sidebar.classList.toggle('sidebar--collapsed');
+      const isCollapsed = sidebar.classList.contains('sidebar--collapsed');
+      sidebarToggle.setAttribute('aria-label', isCollapsed ? 'Étendre la barre latérale' : 'Réduire la barre latérale');
+    });
+
+    /* --- Section tab switching --- */
+    document.querySelectorAll('.section-tabs__item').forEach(tab => {
+      tab.addEventListener('click', () => {
+        const secName = tab.dataset.sec;
+        document.querySelectorAll('.section-tabs__item').forEach(t => t.classList.remove('active'));
+        document.querySelectorAll('.section').forEach(s => s.classList.remove('active'));
+        tab.classList.add('active');
+        document.getElementById(`sec-${secName}`).classList.add('active');
+      });
+    });
+
+    /* --- Plan comptable tree expand/collapse --- */
+    document.querySelectorAll('.pcg-toggle').forEach(toggle => {
+      toggle.addEventListener('click', (e) => {
+        e.stopPropagation();
+        toggle.parentElement.parentElement.querySelector('.pcg-children')?.classList.toggle('collapsed');
+        toggle.classList.toggle('open');
+      });
+    });
+  </script>
+
+</body>
+</html>
