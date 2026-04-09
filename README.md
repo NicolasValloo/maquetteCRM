@@ -30,8 +30,9 @@ python3 -m http.server 8000
 
 ## Structure
 
-- `index.html` — shell de l'application (sidebar + navigation, point d'entrée)
-- `dashboard.html` — tableau de bord
+- `index.html` — point d'entrée, redirige vers `dashboard.html`
+- `shell.html` — état "shell vide" de l'app (référence, non fonctionnel en navigation)
+- `dashboard.html` — tableau de bord (vraie page d'accueil)
 - `crm.html`, `entreprise.html`, `etablissement.html` — CRM et fiches
 - `pipeline.html`, `devis.html` — commercial
 - `compta.html`, `compta-facturation.html`, `abonnements.html` — comptabilité & facturation
